@@ -1,0 +1,1 @@
+{"agent": {"name": "VibeAgent"}, "skills": {"arxiv": {"enabled": true}, "scraper": {"enabled": true}, "llm": {"enabled": true, "base_url": "http://localhost:8087/v1", "model": "glm-4.7"}}, "sqlite": {"database_path": "/home/muham/development/vibeagent/data/vibeagent.db"}}

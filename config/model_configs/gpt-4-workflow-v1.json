@@ -1,0 +1,112 @@
+{
+  "model_name": "gpt-4",
+  "model_family": "gpt",
+  "display_name": "GPT-4",
+  "phase_settings": {
+    "planning": {
+      "temperature": 0.3,
+      "max_tokens": 3000,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": true
+    },
+    "execution": {
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": false
+    },
+    "reflection": {
+      "temperature": 0.8,
+      "max_tokens": 2500,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": true
+    },
+    "summarization": {
+      "temperature": 0.2,
+      "max_tokens": 1000,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": false
+    },
+    "error_recovery": {
+      "temperature": 0.5,
+      "max_tokens": 1500,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": false
+    },
+    "validation": {
+      "temperature": 0.1,
+      "max_tokens": 1000,
+      "top_p": 0.9,
+      "top_k": null,
+      "presence_penalty": 0.0,
+      "frequency_penalty": 0.0,
+      "stop_sequences": [],
+      "response_format": null,
+      "enable_reasoning": false
+    }
+  },
+  "prompt_templates": {},
+  "retry_policy": {
+    "max_retries": 3,
+    "retry_on_errors": [
+      "timeout",
+      "rate_limit",
+      "server_error"
+    ],
+    "backoff_multiplier": 2.0,
+    "initial_delay_ms": 1000,
+    "max_delay_ms": 10000,
+    "retry_on_validation_failure": true
+  },
+  "capabilities": [
+    "tool_calling",
+    "streaming",
+    "long_context",
+    "code_generation",
+    "reflection",
+    "json_mode",
+    "parallel_execution",
+    "reasoning"
+  ],
+  "max_iterations": 15,
+  "max_parallel_calls": 5,
+  "context_window": 128000,
+  "supports_streaming": true,
+  "supports_function_calling": true,
+  "special_instructions": "GPT-4 excels at complex reasoning and multi-step planning. Use lower temperatures for planning, higher for creative tasks.",
+  "optimization_tips": [
+    "Use CoT (Chain of Thought) for complex tasks",
+    "Enable reflection for multi-step reasoning",
+    "Leverage JSON mode for structured outputs",
+    "Use parallel tool calls when safe"
+  ],
+  "performance_metrics": {},
+  "config_version": "workflow-v1",
+  "created_at": "2026-01-24T04:39:16.320734",
+  "updated_at": "2026-01-24T04:39:16.321154"
+}

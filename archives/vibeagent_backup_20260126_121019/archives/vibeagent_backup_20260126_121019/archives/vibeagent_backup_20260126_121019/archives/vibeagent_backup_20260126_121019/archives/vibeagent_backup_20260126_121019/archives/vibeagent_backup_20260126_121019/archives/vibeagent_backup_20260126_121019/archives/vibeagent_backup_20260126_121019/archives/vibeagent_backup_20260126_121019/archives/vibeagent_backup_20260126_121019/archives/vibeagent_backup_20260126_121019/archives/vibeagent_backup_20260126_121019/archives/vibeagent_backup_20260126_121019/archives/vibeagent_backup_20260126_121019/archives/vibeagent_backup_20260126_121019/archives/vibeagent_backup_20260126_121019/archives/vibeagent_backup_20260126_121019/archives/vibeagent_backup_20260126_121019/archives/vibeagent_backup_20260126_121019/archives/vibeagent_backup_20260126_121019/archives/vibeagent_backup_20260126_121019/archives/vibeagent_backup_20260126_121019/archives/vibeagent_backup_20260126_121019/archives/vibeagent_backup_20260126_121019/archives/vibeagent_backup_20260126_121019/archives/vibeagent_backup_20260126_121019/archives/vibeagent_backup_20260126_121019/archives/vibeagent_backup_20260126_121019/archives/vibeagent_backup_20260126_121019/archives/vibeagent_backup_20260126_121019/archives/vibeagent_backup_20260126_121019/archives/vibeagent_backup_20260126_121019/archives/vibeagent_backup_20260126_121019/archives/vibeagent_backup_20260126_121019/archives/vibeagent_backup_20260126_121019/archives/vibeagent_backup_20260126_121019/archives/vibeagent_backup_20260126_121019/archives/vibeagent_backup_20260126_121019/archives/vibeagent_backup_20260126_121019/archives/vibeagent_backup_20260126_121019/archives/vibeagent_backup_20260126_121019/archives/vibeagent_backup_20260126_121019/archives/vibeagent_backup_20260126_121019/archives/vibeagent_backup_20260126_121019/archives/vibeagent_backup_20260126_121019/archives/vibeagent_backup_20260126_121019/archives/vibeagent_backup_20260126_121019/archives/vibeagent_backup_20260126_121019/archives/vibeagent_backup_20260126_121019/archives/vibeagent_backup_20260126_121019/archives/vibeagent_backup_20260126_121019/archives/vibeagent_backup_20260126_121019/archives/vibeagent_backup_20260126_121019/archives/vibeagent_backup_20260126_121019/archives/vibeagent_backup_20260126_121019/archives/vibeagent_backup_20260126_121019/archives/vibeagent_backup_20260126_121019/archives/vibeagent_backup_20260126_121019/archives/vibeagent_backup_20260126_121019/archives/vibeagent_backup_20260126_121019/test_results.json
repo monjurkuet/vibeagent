@@ -1,0 +1,366 @@
+{
+  "timestamp": "2026-01-24T02:26:50.515133",
+  "summary": {
+    "total_models": 2,
+    "models_with_tool_calling": 2,
+    "models_without_tool_calling": 0,
+    "total_tests": 20,
+    "total_passed": 6,
+    "total_failed": 14,
+    "success_rate": 30.0,
+    "average_response_time": 2.6751763224601746
+  },
+  "model_results": {
+    "glm-4.7": {
+      "model": "glm-4.7",
+      "model_id": "glm-4.7",
+      "total_tests": 10,
+      "passed": 2,
+      "failed": 8,
+      "average_response_time": 2.9796395540237426,
+      "supports_tool_calling": true,
+      "success_rate": 20.0,
+      "detailed_results": [
+        {
+          "test_case": "Simple tool call - ArXiv search",
+          "success": true,
+          "passed": false,
+          "response_time": 4.7258946895599365,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_da707286da2b40cebbe9517c",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"machine learning\"}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Multiple tool calls - Search and save papers",
+          "success": true,
+          "passed": false,
+          "response_time": 3.9754607677459717,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_7ce03633b862476d8d99548f",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"neural networks\"}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "No tools needed - General question",
+          "success": true,
+          "passed": true,
+          "response_time": 1.6120383739471436,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Complex multi-step - Research and summarize",
+          "success": true,
+          "passed": false,
+          "response_time": 2.287045955657959,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_abab34bd942744269ac1c706",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"transformer architectures deep learning attention mechanisms\", \"max_results\": 10}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Parallel tool calls - Multiple searches at once",
+          "success": true,
+          "passed": false,
+          "response_time": 2.4763295650482178,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_ee15323666984b228310d67d",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"reinforcement learning computer vision\", \"max_results\": 10}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Error handling - Invalid parameters",
+          "success": true,
+          "passed": true,
+          "response_time": 1.7661445140838623,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Tool call with optional parameters",
+          "success": true,
+          "passed": false,
+          "response_time": 2.799015998840332,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_58dde1f5ba5f4f4b912089ed",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"deep learning\", \"max_results\": 5, \"categories\": [\"cs.AI\"]}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Database query and storage",
+          "success": true,
+          "passed": false,
+          "response_time": 4.26858925819397,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_52b1a53398074e948cf2c0fa",
+              "type": "function",
+              "function": {
+                "arguments": "{\"table\": \"papers\", \"filters\": {\"year\": 2024}}",
+                "name": "sqlite_query"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Context-dependent tool selection",
+          "success": true,
+          "passed": false,
+          "response_time": 3.49238920211792,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_0d0daba5ecc7429d88a8433b",
+              "type": "function",
+              "function": {
+                "arguments": "{\"text\": \"Attention is all you need\", \"analysis_type\": \"academic paper summary\"}",
+                "name": "llm_analyze"
+              }
+            },
+            {
+              "index": 1,
+              "id": "call_c5f2c29c5eb34debbd13dc00",
+              "type": "function",
+              "function": {
+                "arguments": "{\"text\": \"BERT: Pre-training of Deep Bidirectional Transformers\", \"analysis_type\": \"academic paper summary\"}",
+                "name": "llm_analyze"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Tool chaining - Search, process, store",
+          "success": true,
+          "passed": false,
+          "response_time": 2.3934872150421143,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "call_c8289b872b53433ebb68793d",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"generative AI\", \"max_results\": 10}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        }
+      ],
+      "errors": []
+    },
+    "deepseek-v3.2": {
+      "model": "deepseek-v3.2",
+      "model_id": "deepseek-v3.2",
+      "total_tests": 10,
+      "passed": 4,
+      "failed": 6,
+      "average_response_time": 2.3707130908966065,
+      "supports_tool_calling": true,
+      "success_rate": 40.0,
+      "detailed_results": [
+        {
+          "test_case": "Simple tool call - ArXiv search",
+          "success": true,
+          "passed": false,
+          "response_time": 1.063666820526123,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-fa4411697bc74b9aa28000b90a1076ac",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"machine learning\", \"max_results\": 10}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Multiple tool calls - Search and save papers",
+          "success": true,
+          "passed": false,
+          "response_time": 1.8210127353668213,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-a85e74557c7140029e7f7f46f4e00a0c",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"neural networks\", \"max_results\": 10",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "No tools needed - General question",
+          "success": true,
+          "passed": true,
+          "response_time": 1.6686058044433594,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Complex multi-step - Research and summarize",
+          "success": true,
+          "passed": false,
+          "response_time": 3.9103996753692627,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-85a62d27aa87402a9b9b4355bba52158",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"transformer architecture\", \"categories\": [\"cs.CL\", \"cs.LG\", \"cs.CV\"], \"max_results\": 10",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Parallel tool calls - Multiple searches at once",
+          "success": true,
+          "passed": false,
+          "response_time": 1.064333438873291,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-c69c229df001432ea0322c1a2e7fdfea",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"reinforcement learning computer vision\", \"max_results\": 10",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Error handling - Invalid parameters",
+          "success": true,
+          "passed": true,
+          "response_time": 3.8874564170837402,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Tool call with optional parameters",
+          "success": true,
+          "passed": false,
+          "response_time": 1.942995548248291,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-257c2bfe99474b3293da6b9e4e28084e",
+              "type": "function",
+              "function": {
+                "arguments": "{\"categories\": [\"cs.AI\"], \"max_results\": 5, \"query\": \"deep learning\"}",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        },
+        {
+          "test_case": "Database query and storage",
+          "success": true,
+          "passed": true,
+          "response_time": 2.2819056510925293,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Context-dependent tool selection",
+          "success": true,
+          "passed": true,
+          "response_time": 3.047882318496704,
+          "tool_calls": [],
+          "error": null
+        },
+        {
+          "test_case": "Tool chaining - Search, process, store",
+          "success": true,
+          "passed": false,
+          "response_time": 3.0188724994659424,
+          "tool_calls": [
+            {
+              "index": 0,
+              "id": "chatcmpl-tool-b154b2c074d043469a8a5cd7f7019a83",
+              "type": "function",
+              "function": {
+                "arguments": "{\"query\": \"generative AI\", \"max_results\": 10",
+                "name": "arxiv_search"
+              }
+            }
+          ],
+          "error": null
+        }
+      ],
+      "errors": []
+    }
+  },
+  "top_performing_models": [
+    {
+      "model": "deepseek-v3.2",
+      "success_rate": 40.0,
+      "passed": 4,
+      "failed": 6,
+      "average_response_time": 2.3707130908966065
+    },
+    {
+      "model": "glm-4.7",
+      "success_rate": 20.0,
+      "passed": 2,
+      "failed": 8,
+      "average_response_time": 2.9796395540237426
+    }
+  ]
+}

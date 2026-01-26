@@ -1,0 +1,42 @@
+VibeAgent Project Cleanup Report
+Generated: 2026-01-26 12:10:27
+============================================================
+
+REMOVED FILES:
+------------------------------------------------------------
+
+log_files:
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_success.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_test.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_test_final.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_test_fixed.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_test_full.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/comprehensive_test_output.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/enhanced_tool_test.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/llm_capability_test.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/simple_test.log
+  - ./archives/vibeagent_backup_20260126_120842/archives/vibeagent_backup_20260126_120842/tool_test.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_success.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_test.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_test_final.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_test_fixed.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_test_full.log
+  - ./archives/vibeagent_backup_20260126_120842/comprehensive_test_output.log
+  - ./archives/vibeagent_backup_20260126_120842/enhanced_tool_test.log
+  - ./archives/vibeagent_backup_20260126_120842/llm_capability_test.log
+  - ./archives/vibeagent_backup_20260126_120842/simple_test.log
+  - ./archives/vibeagent_backup_20260126_120842/tool_test.log
+
+backup_files:
+  - ./archives/vibeagent_backup_20260126_120842/core/tool_orchestrator.py.broken
+
+
+ORGANIZED FILES:
+------------------------------------------------------------
+
+
+STATISTICS:
+  Files removed: 21
+  Space freed: 478.7 KB
+  Files organized: 0
+  Space in organized files: 0 B

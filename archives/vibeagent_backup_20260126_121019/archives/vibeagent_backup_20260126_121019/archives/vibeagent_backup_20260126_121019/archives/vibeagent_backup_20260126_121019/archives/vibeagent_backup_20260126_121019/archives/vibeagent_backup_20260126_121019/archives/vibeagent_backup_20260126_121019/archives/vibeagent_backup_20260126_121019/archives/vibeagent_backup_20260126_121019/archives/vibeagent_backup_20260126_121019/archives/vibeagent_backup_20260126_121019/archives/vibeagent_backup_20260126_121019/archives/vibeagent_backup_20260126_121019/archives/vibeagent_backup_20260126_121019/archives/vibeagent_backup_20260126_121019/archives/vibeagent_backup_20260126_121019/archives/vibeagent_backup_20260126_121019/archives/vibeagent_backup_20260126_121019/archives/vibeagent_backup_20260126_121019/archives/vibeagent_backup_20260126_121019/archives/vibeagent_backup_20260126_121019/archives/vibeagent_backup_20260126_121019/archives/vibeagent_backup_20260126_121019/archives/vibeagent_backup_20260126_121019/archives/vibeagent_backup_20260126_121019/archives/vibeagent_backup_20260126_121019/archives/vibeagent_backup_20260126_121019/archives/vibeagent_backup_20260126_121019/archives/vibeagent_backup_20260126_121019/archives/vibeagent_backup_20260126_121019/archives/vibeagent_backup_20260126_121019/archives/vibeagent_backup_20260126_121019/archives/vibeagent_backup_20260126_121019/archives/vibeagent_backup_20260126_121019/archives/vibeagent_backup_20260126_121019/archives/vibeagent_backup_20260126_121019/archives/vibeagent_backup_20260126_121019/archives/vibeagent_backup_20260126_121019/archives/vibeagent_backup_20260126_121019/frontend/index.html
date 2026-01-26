@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeAgent Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #FFFFFF;
+            --bg-sidebar: #000000;
+            --bg-secondary: #F5F5F5;
+            --bg-tertiary: #f8fafc;
+            --bg-card: #ffffff;
+            --border-color: #E0E0E0;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent-blue: #0000FF;
+            --accent-green: #00AA00;
+            --accent-red: #FF0000;
+            --accent-orange: #FF6600;
+            --accent-primary: #6366f1;
+            --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+            --accent-warning: #f59e0b;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --gradient-card: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .brand-logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .brand-logo span {
+            font-weight: 300;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-item {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            transition: color 0.2s;
+        }
+
+        .nav-item:hover {
+            color: var(--accent-blue);
+        }
+
+        .nav-item.active {
+            color: var(--accent-blue);
+        }
+
+        .nav-separator {
+            color: var(--border-color);
+            font-size: 0.75rem;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-button {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-button:hover {
+            border-color: var(--text-primary);
+        }
+
+        /* Stock ticker bar */
+        .ticker-bar {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 0.75rem 2rem;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+
+        .ticker-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .ticker-ticker {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .ticker-price {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .ticker-change {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .ticker-change.up {
+            color: var(--accent-green);
+        }
+
+        .ticker-change.down {
+            color: var(--accent-red);
+        }
+
+        /* Main layout */
+        .main-container {
+            display: flex;
+            min-height: calc(100vh - 120px);
+        }
+
+        .content-area {
+            flex: 0 0 70%;
+            padding: 3rem 4rem;
+            max-width: 70%;
+        }
+
+        .sidebar-panel {
+            flex: 0 0 30%;
+            background: var(--bg-sidebar);
+            color: #FFFFFF;
+            padding: 1.5rem;
+            max-width: 30%;
+            border-left: 1px solid var(--border-color);
+        }
+
+        /* Content styling */
+        .content-section {
+            max-width: 800px;
+        }
+
+        .chart-description {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 2rem;
+        }
+
+        .main-text {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .quote {
+            font-style: italic;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 2rem 0;
+            padding-left: 1rem;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .cta-link {
+            color: var(--accent-blue);
+            text-decoration: underline;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .cta-link:hover {
+            color: #0000CC;
+        }
+
+        /* Sidebar styling */
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .sidebar-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .sidebar-tab {
+            background: transparent;
+            border: 1px solid #333;
+            color: #FFFFFF;
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .sidebar-tab:hover {
+            background: #1a1a1a;
+        }
+
+        .sidebar-tab.active {
+            background: #FFFFFF;
+            color: #000000;
+            border-color: #FFFFFF;
+        }
+
+        /* Terminal-style status */
+        .terminal-status {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            color: #FFFFFF;
+        }
+
+        .terminal-line {
+            margin-bottom: 0.25rem;
+        }
+
+        .terminal-progress {
+            display: inline-block;
+            background: #333;
+            padding: 0.25rem 0.5rem;
+            border-radius: 2px;
+        }
+
+        .terminal-bar {
+            display: inline-block;
+            height: 8px;
+            background: #666;
+            width: 100px;
+            margin: 0 0.5rem;
+            border-radius: 1px;
+        }
+
+        .terminal-bar-fill {
+            display: inline-block;
+            height: 100%;
+            background: #FFFFFF;
+            width: 60%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Chat interface */
+        .chat-container {
+            margin-top: 2rem;
+            border-top: 1px solid #333;
+            padding-top: 1.5rem;
+        }
+
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            padding-right: 0.5rem;
+        }
+
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .chat-message.user {
+            background: #2a2a2a;
+        }
+
+        .chat-message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .chat-message-content {
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: #CCCCCC;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #FFFFFF;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #666;
+        }
+
+        .chat-send {
+            background: #FFFFFF;
+            color: #000000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .chat-send:hover {
+            background: #E0E0E0;
+        }
+
+        /* Skills display */
+        .skills-grid {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .skill-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .skill-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .skill-status {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 2px;
+        }
+
+        .skill-status.healthy {
+            background: var(--accent-green);
+            color: #FFFFFF;
+        }
+
+        .skill-status.error {
+            background: var(--accent-red);
+            color: #FFFFFF;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .content-area {
+                flex: 0 0 60%;
+                max-width: 60%;
+                padding: 2rem 3rem;
+            }
+
+            .sidebar-panel {
+                flex: 0 0 40%;
+                max-width: 40%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+
+            .content-area {
+                flex: 1;
+                max-width: 100%;
+                padding: 2rem 1.5rem;
+            }
+
+            .sidebar-panel {
+                flex: 1;
+                max-width: 100%;
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+
+            .nav-menu {
+                display: none;
+            }
+        }
+
+        .card {
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .card-header {
+            background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-card) 100%);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-control,
+        .form-select,
+        .form-control:focus {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background-color: var(--bg-secondary);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .chat-container {
+            height: calc(100vh - 220px);
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .message {
+            margin-bottom: 1.25rem;
+            padding: 1.25rem;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: var(--gradient-primary);
+            margin-left: 3rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .message.assistant {
+            background-color: var(--bg-tertiary);
+            margin-right: 3rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .task-item {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            border-color: var(--accent-primary);
+            transform: translateX(4px);
+        }
+
+        .task-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.75rem;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .task-status.pending { 
+            background-color: var(--accent-warning); 
+            color: var(--accent-warning);
+        }
+        .task-status.running { 
+            background-color: var(--accent-success); 
+            color: var(--accent-success);
+        }
+        .task-status.completed { 
+            background-color: var(--text-muted); 
+            color: var(--text-muted);
+        }
+        .task-status.failed { 
+            background-color: var(--accent-danger); 
+            color: var(--accent-danger);
+        }
+
+        .skill-card {
+            background: var(--gradient-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .skill-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        .skill-status {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background-color: var(--accent-success);
+            box-shadow: 0 0 10px var(--accent-success);
+        }
+
+        .status-dot.offline {
+            background-color: var(--accent-danger);
+        }
+
+        .badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="nav-left">
+            <a href="/" class="brand-logo">
+                Vibe<span>Agent</span>
+            </a>
+            <div class="nav-menu">
+                <a href="#" class="nav-item active">LIVE</a>
+                <span class="nav-separator">|</span>
+                <a href="#" class="nav-item">TASKS</a>
+                <span class="nav-separator">|</span>
+                <a href="#" class="nav-item">SKILLS</a>
+                <span class="nav-separator">|</span>
+                <a href="#" class="nav-item">PROMPT</a>
+            </div>
+        </div>
+        <div class="nav-right">
+            <a href="#" class="nav-button">
+                JOIN WAITLIST ⌂
+            </a>
+            <a href="#" class="nav-button">
+                ABOUT ⌂
+            </a>
+        </div>
+    </nav>
+
+    <!-- Stock Ticker Bar -->
+    <div class="ticker-bar">
+        <div class="ticker-item">
+            <span class="ticker-ticker">TSLA</span>
+            <span class="ticker-price">$447.35</span>
+            <span class="ticker-change down">↓</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">NDX</span>
+            <span class="ticker-price">$25,423.00</span>
+            <span class="ticker-change up">↑</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">NVDA</span>
+            <span class="ticker-price">$186.91</span>
+            <span class="ticker-change up">↑</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">MSFT</span>
+            <span class="ticker-price">$450.43</span>
+            <span class="ticker-change">●</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">AMZN</span>
+            <span class="ticker-price">$234.85</span>
+            <span class="ticker-change">●</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">GOOGL</span>
+            <span class="ticker-price">$330.81</span>
+            <span class="ticker-change">●</span>
+        </div>
+        <div class="ticker-item">
+            <span class="ticker-ticker">PLTR</span>
+            <span class="ticker-price">$166.35</span>
+            <span class="ticker-change">●</span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Content Area -->
+        <div class="content-area">
+            <div class="content-section">
+                <div class="chart-description">
+                    This dashboard displays the VibeAgent interface with real-time AI capabilities.
+                </div>
+
+                <p class="main-text">
+                    A decade ago, AI research revolutionized how we think about intelligence. Their key insight was that choosing the right environment would lead to rapid progress in frontier AI.
+                </p>
+
+                <p class="main-text">
+                    At VibeAgent, we believe that multi-agent systems are the best training environment for the next era of AI. They are the ultimate collaboration engine and the only framework that gets smarter as agents work together.
+                </p>
+
+                <p class="main-text">
+                    Instead of single models, we're using agent frameworks to create new base models that generate their own training data indefinitely. We're using techniques like open-ended learning and large-scale RL to handle the complexity of real-world tasks.
+                </p>
+
+                <p class="main-text">
+                    If this resonates, we're building: engineers, researchers, founders, original thinkers.
+                </p>
+
+                <p class="main-text">
+                    If you're excited to build AlphaZero for the real world, get in touch.
+                </p>
+
+                <div class="quote">
+                    "Intelligence is the discipline through which agents converge with truth."
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <a href="#" class="cta-link">Join the Waitlist</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Panel -->
+        <div class="sidebar-panel">
+            <div class="sidebar-header">
+                <span class="sidebar-title">MODELCHAT</span>
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" onclick="switchTab('chat')">CHAT</button>
+                    <button class="sidebar-tab" onclick="switchTab('skills')">SKILLS</button>
+                    <button class="sidebar-tab" onclick="switchTab('tasks')">TASKS</button>
+                </div>
+            </div>
+
+            <!-- Terminal Status -->
+            <div class="terminal-status" id="terminal-status">
+                <div class="terminal-line">INITIALIZING CHAT FEED...|</div>
+                <div class="terminal-line">
+                    <span class="terminal-progress">[</span>
+                    <span class="terminal-bar"><span class="terminal-bar-fill"></span></span>
+                    <span class="terminal-progress">]</span>
+                </div>
+                <div class="terminal-line">STATUS: CONNECTING TO CONVERSATION API</div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="chat-container" id="chat-interface">
+                <div class="chat-messages" id="chat-messages">
+                    <div class="chat-message assistant">
+                        <div class="chat-message-header">
+                            <span>ASSISTANT</span>
+                        </div>
+                        <div class="chat-message-content">Hello! I'm VibeAgent. How can I help you today?</div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Type your message...">
+                    <button class="chat-send" onclick="sendMessage()">SEND</button>
+                </div>
+            </div>
+
+            <!-- Skills Interface -->
+            <div class="chat-container" id="skills-interface" style="display: none;">
+                <div class="skills-grid" id="skills-list">
+                    <div class="skill-item">
+                        <span class="skill-name">ArXiv Search</span>
+                        <span class="skill-status healthy">HEALTHY</span>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">Web Scraper</span>
+                        <span class="skill-status healthy">HEALTHY</span>
+                    </div>
+                    <div class="skill-item">
+                        <span class="skill-name">LLM</span>
+                        <span class="skill-status healthy">HEALTHY</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tasks Interface -->
+            <div class="chat-container" id="tasks-interface" style="display: none;">
+                <div class="skills-grid" id="task-list">
+                    <div class="skill-item">
+                        <span class="skill-name">No tasks yet</span>
+                        <span class="skill-status">PENDING</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // API URL - will be dynamically updated by startup script
+        const API_URL = 'http://localhost:9000';
+        let ws = null;
+
+        // Tab navigation for sidebar
+        function switchTab(tabId) {
+            // Update tab buttons
+            document.querySelectorAll('.sidebar-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content visibility
+            document.getElementById('chat-interface').style.display = 'none';
+            document.getElementById('skills-interface').style.display = 'none';
+            document.getElementById('tasks-interface').style.display = 'none';
+
+            document.getElementById(`${tabId}-interface`).style.display = 'block';
+        }
+
+        // WebSocket connection
+        function connectWebSocket() {
+            ws = new WebSocket(`${API_URL.replace('http', 'ws')}/ws`);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateTerminalStatus('CONNECTED', 'green');
+                updateAgentStatus();
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'message') {
+                        addMessage(data.role, data.content);
+                    } else if (data.type === 'status') {
+                        updateSkills(data.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to parse WebSocket message:', error);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateTerminalStatus('DISCONNECTED', 'red');
+                
+                // Implement reconnection with exponential backoff and max attempts
+                let reconnectAttempts = 0;
+                const maxAttempts = 5;
+                let retryDelay = 1000; // Start with 1 second
+
+                function attemptReconnect() {
+                    if (reconnectAttempts >= maxAttempts) {
+                        console.error('Max reconnection attempts reached');
+                        updateTerminalStatus('CONNECTION FAILED', 'red');
+                        return;
+                    }
+
+                    reconnectAttempts++;
+                    updateTerminalStatus(`RECONNECTING (${reconnectAttempts}/${maxAttempts})`, 'yellow');
+                    console.log(`Reconnection attempt ${reconnectAttempts}/${maxAttempts} in ${retryDelay}ms`);
+                    
+                    setTimeout(() => {
+                        connectWebSocket();
+                        retryDelay *= 2; // Exponential backoff
+                    }, retryDelay);
+                }
+
+                attemptReconnect();
+            };
+        }
+
+        // Update terminal status
+        function updateTerminalStatus(status, color) {
+            const terminalStatus = document.getElementById('terminal-status');
+            const colorMap = {
+                'green': '#00AA00',
+                'red': '#FF0000',
+                'yellow': '#FFAA00'
+            };
+            
+            terminalStatus.innerHTML = `
+                <div class="terminal-line">INITIALIZING CHAT FEED...|</div>
+                <div class="terminal-line">
+                    <span class="terminal-progress">[</span>
+                    <span class="terminal-bar"><span class="terminal-bar-fill"></span></span>
+                    <span class="terminal-progress">]</span>
+                </div>
+                <div class="terminal-line" style="color: ${colorMap[color] || '#FFFFFF'}">STATUS: ${status}</div>
+            `;
+        }
+
+        // Chat functions
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            addMessage('user', message);
+            input.value = '';
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    content: message
+                }));
+            } else {
+                addMessage('system', 'Not connected to server');
+            }
+        }
+
+        function addMessage(role, content) {
+            const chatMessages = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${role}`;
+            
+            const roleLabel = role === 'user' ? 'USER' : role === 'system' ? 'SYSTEM' : 'ASSISTANT';
+            
+            messageDiv.innerHTML = `
+                <div class="chat-message-header">
+                    <span>${roleLabel}</span>
+                </div>
+                <div class="chat-message-content"></div>
+            `;
+            
+            // Use textContent to prevent XSS
+            messageDiv.querySelector('.chat-message-content').textContent = content;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Enter key to send
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Agent status
+        async function updateAgentStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (data.status === 'healthy') {
+                    updateTerminalStatus(`${data.agent.toUpperCase()} - ONLINE`, 'green');
+                    updateSkills(data.skills);
+                } else {
+                    updateTerminalStatus(data.status.toUpperCase(), 'red');
+                }
+            } catch (error) {
+                updateTerminalStatus('OFFLINE', 'red');
+            }
+        }
+
+        // Skills status
+        function updateSkills(skills) {
+            const skillsList = document.getElementById('skills-list');
+
+            if (!skills || skills.length === 0) {
+                skillsList.innerHTML = '<div class="skill-item"><span class="skill-name">No skills loaded</span></div>';
+                return;
+            }
+
+            skillsList.innerHTML = skills.map(skill => `
+                <div class="skill-item">
+                    <span class="skill-name">${skill.name}</span>
+                    <span class="skill-status ${skill.healthy ? 'healthy' : 'error'}">
+                        ${skill.healthy ? 'HEALTHY' : 'ERROR'}
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        // Task queue functionality
+        let tasks = [];
+
+        function addTask(skill, description, parameters = {}) {
+            const task = {
+                id: Date.now(),
+                skill,
+                description,
+                parameters,
+                status: 'pending',
+                timestamp: new Date().toLocaleTimeString()
+            };
+            tasks.push(task);
+            updateTaskList();
+            return task.id;
+        }
+
+        function updateTaskStatus(taskId, status, result = null, error = null) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+                task.status = status;
+                task.result = result;
+                task.error = error;
+                updateTaskList();
+            }
+        }
+
+        function updateTaskList() {
+            const taskList = document.getElementById('task-list');
+
+            if (tasks.length === 0) {
+                taskList.innerHTML = '<div class="skill-item"><span class="skill-name">No tasks yet</span></div>';
+                return;
+            }
+
+            taskList.innerHTML = tasks.map(task => `
+                <div class="skill-item">
+                    <div>
+                        <span class="skill-name">${task.skill}</span>
+                        <span class="skill-status" style="background: #333; color: #999;">
+                            ${task.status.toUpperCase()}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function executeTask(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            updateTaskStatus(taskId, 'running');
+
+            try {
+                const response = await fetch(`${API_URL}/agent/execute`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        skill: task.skill,
+                        parameters: task.parameters
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateTaskStatus(taskId, 'completed', data.data);
+                } else {
+                    updateTaskStatus(taskId, 'failed', null, data.error);
+                }
+            } catch (error) {
+                updateTaskStatus(taskId, 'failed', null, error.message);
+            }
+        }
+
+        // Initialize
+        connectWebSocket();
+        setInterval(updateAgentStatus, 5000);
+    </script>
+</body>
+</html>
