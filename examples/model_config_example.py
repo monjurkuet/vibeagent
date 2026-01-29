@@ -19,20 +19,18 @@ from config.model_configs import (
     ExecutionPhase,
     ModelCapability,
     ModelConfig,
-    ModelConfigRegistry,
-    ModelConfigStorage,
     ModelConfigOptimizer,
+    ModelConfigStorage,
+    create_ab_test_config,
+    detect_model_capabilities,
+    get_llm_params_for_phase,
+    get_max_tokens_for_phase,
     get_model_config,
     get_temperature_for_phase,
-    get_max_tokens_for_phase,
-    get_prompt_template,
-    detect_model_capabilities,
-    validate_config,
-    create_ab_test_config,
     integrate_with_orchestrator,
-    get_llm_params_for_phase,
     load_config_from_env,
     registry,
+    validate_config,
 )
 
 logging.basicConfig(level=logging.INFO)
@@ -141,7 +139,7 @@ def example_custom_config():
 
     is_valid, errors = validate_config(custom_config)
     if is_valid:
-        print(f"  ✓ Configuration is valid")
+        print("  ✓ Configuration is valid")
     else:
         print(f"  ✗ Configuration errors: {errors}")
 
@@ -160,9 +158,7 @@ def example_config_storage():
 
     loaded_config = storage.load_config("gpt-4", version="v1.0.0")
     if loaded_config:
-        print(
-            f"Loaded config: {loaded_config.display_name} (v{loaded_config.config_version})"
-        )
+        print(f"Loaded config: {loaded_config.display_name} (v{loaded_config.config_version})")
 
     versions = storage.list_versions("gpt-4")
     print(f"Available versions: {versions}")
@@ -210,12 +206,8 @@ def example_ab_testing():
     base_config = get_model_config("gpt-4")
 
     print("\nBase configuration:")
-    print(
-        f"  Planning temp: {base_config.get_temperature(ExecutionPhase.PLANNING):.2f}"
-    )
-    print(
-        f"  Execution temp: {base_config.get_temperature(ExecutionPhase.EXECUTION):.2f}"
-    )
+    print(f"  Planning temp: {base_config.get_temperature(ExecutionPhase.PLANNING):.2f}")
+    print(f"  Execution temp: {base_config.get_temperature(ExecutionPhase.EXECUTION):.2f}")
 
     variant_a = create_ab_test_config(
         base_config,
@@ -241,15 +233,11 @@ def example_ab_testing():
 
     print("\nVariant A (lower-temp):")
     print(f"  Planning temp: {variant_a.get_temperature(ExecutionPhase.PLANNING):.2f}")
-    print(
-        f"  Execution temp: {variant_a.get_temperature(ExecutionPhase.EXECUTION):.2f}"
-    )
+    print(f"  Execution temp: {variant_a.get_temperature(ExecutionPhase.EXECUTION):.2f}")
 
     print("\nVariant B (higher-temp):")
     print(f"  Planning temp: {variant_b.get_temperature(ExecutionPhase.PLANNING):.2f}")
-    print(
-        f"  Execution temp: {variant_b.get_temperature(ExecutionPhase.EXECUTION):.2f}"
-    )
+    print(f"  Execution temp: {variant_b.get_temperature(ExecutionPhase.EXECUTION):.2f}")
 
 
 def example_registry_operations():
@@ -332,7 +320,7 @@ def example_complete_workflow():
 
     storage = ModelConfigStorage()
     storage.save_config(config, version="workflow-v1")
-    print(f"2. Saved configuration to storage")
+    print("2. Saved configuration to storage")
 
     optimizer = ModelConfigOptimizer()
 
@@ -359,7 +347,7 @@ def example_complete_workflow():
     print(f"\n4. Tracked performance for {len(optimizer.performance_history)} phases")
 
     suggestions = optimizer.suggest_optimizations(config)
-    print(f"\n5. Optimization suggestions:")
+    print("\n5. Optimization suggestions:")
     for suggestion in suggestions:
         print(f"   - {suggestion}")
 

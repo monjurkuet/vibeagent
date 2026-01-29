@@ -1,14 +1,14 @@
 """Example usage of RetryManager."""
 
+
+from core.database_manager import DatabaseManager
 from core.retry_manager import (
-    RetryManager,
-    RetryPolicy,
     BackoffStrategy,
     ErrorType,
+    RetryManager,
+    RetryPolicy,
 )
 from core.skill import SkillResult
-from core.database_manager import DatabaseManager
-import requests
 
 
 def example_basic_usage():
@@ -66,9 +66,7 @@ def example_custom_policy():
     retry_manager.TOOL_SPECIFIC_POLICIES["arxiv_search_papers"] = arxiv_policy
 
     print(f"Global policy: {retry_manager.global_policy.to_dict()}")
-    print(
-        f"ArXiv policy: {retry_manager.get_retry_policy('arxiv_search_papers').to_dict()}"
-    )
+    print(f"ArXiv policy: {retry_manager.get_retry_policy('arxiv_search_papers').to_dict()}")
 
 
 def example_error_classification():
@@ -90,9 +88,7 @@ def example_error_classification():
     for error in errors:
         error_type = retry_manager.classify_error(error)
         is_retryable = retry_manager.is_retryable(error)
-        print(
-            f"Error: {str(error):40} | Type: {error_type.value:15} | Retryable: {is_retryable}"
-        )
+        print(f"Error: {str(error):40} | Type: {error_type.value:15} | Retryable: {is_retryable}")
 
 
 def example_backoff_strategies():
@@ -148,7 +144,7 @@ def example_database_integration():
     )
 
     print(f"Result: {result.success}")
-    print(f"Retry attempts tracked in database")
+    print("Retry attempts tracked in database")
     print(f"Statistics: {retry_manager.get_statistics()}")
 
 
@@ -188,12 +184,8 @@ def example_model_specific_policies():
     retry_manager.set_model_retry_policy("claude-3", claude_policy)
 
     print(f"GPT-4 policy: {retry_manager.get_model_retry_policy('gpt-4').to_dict()}")
-    print(
-        f"Claude-3 policy: {retry_manager.get_model_retry_policy('claude-3').to_dict()}"
-    )
-    print(
-        f"Default policy: {retry_manager.get_model_retry_policy('unknown').to_dict()}"
-    )
+    print(f"Claude-3 policy: {retry_manager.get_model_retry_policy('claude-3').to_dict()}")
+    print(f"Default policy: {retry_manager.get_model_retry_policy('unknown').to_dict()}")
 
 
 def example_decorator_usage():
@@ -278,7 +270,7 @@ def example_attempt_history():
 
     # Get attempt history
     history = retry_manager.get_attempt_history(tool_name="test_tool", limit=10)
-    print(f"Attempt history for 'test_tool':")
+    print("Attempt history for 'test_tool':")
     for attempt in history:
         print(
             f"  Attempt {attempt['attempt_number']}: "

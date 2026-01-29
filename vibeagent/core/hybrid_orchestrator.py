@@ -2,11 +2,10 @@
 
 import json
 import logging
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
 from .skill import BaseSkill, SkillResult
-from .tool_orchestrator import ToolOrchestrator, OrchestratorResult
+from .tool_orchestrator import ToolOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +19,9 @@ class HybridOrchestratorResult:
     method_used: str
     iterations: int
     tool_calls_made: int
-    tool_results: List[Dict]
-    error: Optional[str] = None
-    metadata: Dict = None
+    tool_results: list[dict]
+    error: str | None = None
+    metadata: dict = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -32,7 +31,7 @@ class HybridOrchestratorResult:
 class HybridOrchestrator:
     """Orchestrator that tries tool calling first, falls back to prompt-based approach."""
 
-    def __init__(self, llm_skill, skills: Dict[str, BaseSkill]):
+    def __init__(self, llm_skill, skills: dict[str, BaseSkill]):
         """Initialize the hybrid orchestrator.
 
         Args:
@@ -44,9 +43,7 @@ class HybridOrchestrator:
         self.tool_orchestrator = ToolOrchestrator(llm_skill, skills)
         logger.info(f"HybridOrchestrator initialized with {len(skills)} skills")
 
-    def execute(
-        self, user_message: str, max_iterations: int = 10
-    ) -> HybridOrchestratorResult:
+    def execute(self, user_message: str, max_iterations: int = 10) -> HybridOrchestratorResult:
         """Execute user message with hybrid approach.
 
         Args:
@@ -56,14 +53,10 @@ class HybridOrchestrator:
         Returns:
             HybridOrchestratorResult with final response and metrics
         """
-        logger.info(
-            f"Executing user message with hybrid approach: {user_message[:100]}..."
-        )
+        logger.info(f"Executing user message with hybrid approach: {user_message[:100]}...")
 
         try:
-            tool_result = self.tool_orchestrator.execute_with_tools(
-                user_message, max_iterations
-            )
+            tool_result = self.tool_orchestrator.execute_with_tools(user_message, max_iterations)
 
             if tool_result.success and tool_result.final_response:
                 logger.info("Tool calling succeeded, returning result")
@@ -78,9 +71,7 @@ class HybridOrchestrator:
                     metadata=tool_result.metadata,
                 )
 
-            logger.info(
-                "Tool calling failed or returned no results, falling back to prompt-based"
-            )
+            logger.info("Tool calling failed or returned no results, falling back to prompt-based")
             return self._execute_prompt_based(user_message)
 
         except Exception as e:
@@ -154,13 +145,9 @@ class HybridOrchestrator:
                     )
                 except Exception as e:
                     logger.error(f"Error executing task {skill_name}: {str(e)}")
-                    execution_results.append(
-                        {"task": task, "result": f"Error: {str(e)}"}
-                    )
+                    execution_results.append({"task": task, "result": f"Error: {str(e)}"})
 
-            final_response = self._generate_final_response(
-                user_message, execution_results
-            )
+            final_response = self._generate_final_response(user_message, execution_results)
 
             return HybridOrchestratorResult(
                 success=True,
@@ -184,7 +171,7 @@ class HybridOrchestrator:
                 error=f"Prompt-based execution failed: {str(e)}",
             )
 
-    def _generate_task_plan(self, user_message: str) -> Optional[List[Dict]]:
+    def _generate_task_plan(self, user_message: str) -> list[dict] | None:
         """Generate a task plan from the user message using LLM.
 
         Args:
@@ -246,9 +233,7 @@ Example format:
             logger.error(f"Error generating task plan: {str(e)}")
             return None
 
-    def _generate_final_response(
-        self, user_message: str, execution_results: List[Dict]
-    ) -> str:
+    def _generate_final_response(self, user_message: str, execution_results: list[dict]) -> str:
         """Generate final response from execution results.
 
         Args:
@@ -275,8 +260,7 @@ Provide a clear, concise response that directly addresses the user's request bas
 
             if response.success:
                 return response.data.get("content", "Unable to generate response")
-            else:
-                return f"Error generating final response: {response.error}"
+            return f"Error generating final response: {response.error}"
 
         except Exception as e:
             logger.error(f"Error generating final response: {str(e)}")

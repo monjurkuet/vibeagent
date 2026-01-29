@@ -2,13 +2,12 @@
 
 import pytest
 from core.self_corrector import (
-    SelfCorrector,
-    SelfCorrectorConfig,
+    CorrectionStrategy,
     CorrectionTrigger,
     CorrectionType,
     ErrorPattern,
-    CorrectionStrategy,
-    ConfidenceMetrics,
+    SelfCorrector,
+    SelfCorrectorConfig,
 )
 from core.skill import SkillResult
 
@@ -18,9 +17,7 @@ class TestCorrectionTriggerDetection:
 
     def test_should_correct_repeated_failures(self):
         """Test correction triggered by repeated failures."""
-        corrector = SelfCorrector(
-            config=SelfCorrectorConfig(consecutive_error_threshold=2)
-        )
+        corrector = SelfCorrector(config=SelfCorrectorConfig(consecutive_error_threshold=2))
 
         context = {
             "tool_result": SkillResult(success=False, error="API error"),
@@ -35,9 +32,7 @@ class TestCorrectionTriggerDetection:
 
     def test_should_not_correct_single_failure(self):
         """Test no correction for single failure."""
-        corrector = SelfCorrector(
-            config=SelfCorrectorConfig(consecutive_error_threshold=2)
-        )
+        corrector = SelfCorrector(config=SelfCorrectorConfig(consecutive_error_threshold=2))
 
         context = {
             "tool_result": SkillResult(success=False, error="API error"),
@@ -223,11 +218,7 @@ class TestAlternativeStrategyGeneration:
         assert len(alternatives) > 0
 
         retry_strategy = next(
-            (
-                s
-                for s in alternatives
-                if s.strategy_type == CorrectionType.RETRY_WITH_DELAY
-            ),
+            (s for s in alternatives if s.strategy_type == CorrectionType.RETRY_WITH_DELAY),
             None,
         )
         assert retry_strategy is not None
@@ -249,11 +240,7 @@ class TestAlternativeStrategyGeneration:
         assert len(alternatives) > 0
 
         param_strategy = next(
-            (
-                s
-                for s in alternatives
-                if s.strategy_type == CorrectionType.MODIFIED_PARAMETERS
-            ),
+            (s for s in alternatives if s.strategy_type == CorrectionType.MODIFIED_PARAMETERS),
             None,
         )
         assert param_strategy is not None
@@ -442,9 +429,7 @@ class TestPatternLearning:
 
     def test_learn_from_successful_correction(self):
         """Test learning from successful correction."""
-        corrector = SelfCorrector(
-            config=SelfCorrectorConfig(enable_pattern_learning=True)
-        )
+        corrector = SelfCorrector(config=SelfCorrectorConfig(enable_pattern_learning=True))
 
         strategy = CorrectionStrategy(
             strategy_type=CorrectionType.RETRY_WITH_DELAY,
@@ -474,9 +459,7 @@ class TestPatternLearning:
 
     def test_learn_from_failed_correction(self):
         """Test learning from failed correction."""
-        corrector = SelfCorrector(
-            config=SelfCorrectorConfig(enable_pattern_learning=True)
-        )
+        corrector = SelfCorrector(config=SelfCorrectorConfig(enable_pattern_learning=True))
 
         strategy = CorrectionStrategy(
             strategy_type=CorrectionType.DIFFERENT_TOOL,

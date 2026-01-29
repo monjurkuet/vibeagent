@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 
 class Config:
@@ -13,39 +13,27 @@ class Config:
         self.config = self._load_config()
         self.ports = self._load_ports()
 
-    def _load_config(self) -> Dict:
+    def _load_config(self) -> dict:
         """Load configuration from file."""
         if self.config_path.exists():
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path) as f:
                 return json.load(f)
         return self._default_config()
 
-    def _default_config(self) -> Dict:
+    def _default_config(self) -> dict:
         """Return default configuration."""
         return {
-            "agent": {
-                "name": "VibeAgent",
-                "version": "1.0.0"
-            },
+            "agent": {"name": "VibeAgent", "version": "1.0.0"},
             "skills": {
-                "arxiv": {
-                    "enabled": True,
-                    "max_results": 50,
-                    "months_back": 6
-                },
-                "scraper": {
-                    "enabled": True,
-                    "timeout": 10
-                },
+                "arxiv": {"enabled": True, "max_results": 50, "months_back": 6},
+                "scraper": {"enabled": True, "timeout": 10},
                 "llm": {
                     "enabled": True,
                     "base_url": "http://localhost:8087/v1",
-                    "model": "glm-4.7"
-                }
+                    "model": "glm-4.7",
+                },
             },
-            "sqlite": {
-                "database_path": "data/vibeagent.db"
-            },
+            "sqlite": {"database_path": "data/vibeagent.db"},
             "topics": [
                 "context engineering",
                 "prompt engineering",
@@ -55,21 +43,17 @@ class Config:
                 "vector database",
                 "RAG retrieval augmented generation",
                 "agent framework",
-                "LLM agents"
-            ]
+                "LLM agents",
+            ],
         }
 
-    def _load_ports(self) -> Dict:
+    def _load_ports(self) -> dict:
         """Load port configuration."""
         ports_file = self.config_path.parent / "ports.json"
         if ports_file.exists():
-            with open(ports_file, 'r') as f:
+            with open(ports_file) as f:
                 return json.load(f)
-        return {
-            "api": 8000,
-            "dashboard": 8080,
-            "database": 5432
-        }
+        return {"api": 8000, "dashboard": 8080, "database": 5432}
 
     def get(self, *keys, default=None) -> Any:
         """Get configuration value with dot notation."""

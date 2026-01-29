@@ -1,26 +1,15 @@
-from .skill import BaseSkill, SkillResult
+from .parallel_executor import ParallelExecutor, ParallelExecutorConfig
 from .retry_manager import RetryManager
-from .parallel_executor import ParallelExecutor, ParallelExecutorConfig, ParallelExecutionResult
-from .context_manager import ContextManager
+from .skill import BaseSkill, SkillResult
 
 """Tool orchestrator for managing LLM tool calling loop."""
 
 import json
-import uuid
-import time
 import logging
 import re
-from typing import Dict, List, Optional, Any, Tuple
+import time
+import uuid
 from dataclasses import dataclass
-from pathlib import Path
-
-from .skill import BaseSkill, SkillResult
-from .retry_manager import RetryManager
-from .parallel_executor import (
-    ParallelExecutor,
-    ParallelExecutorConfig,
-    ParallelExecutionResult,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +31,10 @@ class OrchestratorResult:
     final_response: str
     iterations: int
     tool_calls_made: int
-    tool_results: List[Dict]
-    error: Optional[str] = None
-    metadata: Optional[Dict] = None
-    reasoning_trace: Optional[List[Dict]] = None
+    tool_results: list[dict]
+    error: str | None = None
+    metadata: dict | None = None
+    reasoning_trace: list[dict] | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -60,7 +49,7 @@ class ToolOrchestrator:
     def __init__(
         self,
         llm_skill,
-        skills: Dict[str, BaseSkill],
+        skills: dict[str, BaseSkill],
         db_manager=None,
         use_react=False,
         react_config=None,
@@ -93,7 +82,7 @@ class ToolOrchestrator:
             ),
         )
 
-    def _build_tool_schemas(self) -> List[Dict]:
+    def _build_tool_schemas(self) -> list[dict]:
         """Build tool schemas from registered skills.
 
         Returns:
@@ -118,13 +107,13 @@ class ToolOrchestrator:
         model_name = self.llm_skill.model.lower()
         if "gpt-4" in model_name:
             return "gpt4"
-        elif "claude" in model_name:
+        if "claude" in model_name:
             return "claude"
-        elif any(x in model_name for x in ["llama", "mistral", "phi", "gemma"]):
+        if any(x in model_name for x in ["llama", "mistral", "phi", "gemma"]):
             return "local_llm"
         return "default"
 
-    def _build_react_messages(self, messages: List[Dict]) -> List[Dict]:
+    def _build_react_messages(self, messages: list[dict]) -> list[dict]:
         """Build complete ReAct prompt with system message and examples.
 
         Args:
@@ -146,7 +135,7 @@ class ToolOrchestrator:
             example_categories=example_categories,
         )
 
-    def _determine_task_type(self, messages: List[Dict]) -> str:
+    def _determine_task_type(self, messages: list[dict]) -> str:
         """Determine task type from user message.
 
         Args:
@@ -165,13 +154,9 @@ class ToolOrchestrator:
                 break
 
         if any(
-            word in user_content
-            for word in ["and", "then", "after", "first", "next", "finally"]
+            word in user_content for word in ["and", "then", "after", "first", "next", "finally"]
         ):
-            if any(
-                word in user_content
-                for word in ["simultaneously", "parallel", "together"]
-            ):
+            if any(word in user_content for word in ["simultaneously", "parallel", "together"]):
                 return "parallel"
             return "chaining"
 
@@ -183,7 +168,7 @@ class ToolOrchestrator:
 
         return "simple"
 
-    def _get_example_categories(self, task_type: str) -> Optional[List[str]]:
+    def _get_example_categories(self, task_type: str) -> list[str] | None:
         """Get example categories based on task type.
 
         Args:
@@ -271,9 +256,7 @@ class ToolOrchestrator:
                             self.db_manager.update_session(
                                 session_db_id,
                                 final_status="failed",
-                                total_duration_ms=int(
-                                    (time.time() - start_time) * 1000
-                                ),
+                                total_duration_ms=int((time.time() - start_time) * 1000),
                                 total_iterations=iterations,
                                 total_tool_calls=tool_calls_made,
                             )
@@ -323,9 +306,7 @@ class ToolOrchestrator:
                             self.db_manager.update_session(
                                 session_db_id,
                                 final_status="completed",
-                                total_duration_ms=int(
-                                    (time.time() - start_time) * 1000
-                                ),
+                                total_duration_ms=int((time.time() - start_time) * 1000),
                                 total_iterations=iterations,
                                 total_tool_calls=tool_calls_made,
                             )
@@ -342,12 +323,10 @@ class ToolOrchestrator:
                     )
 
                 if len(tool_calls) > 1:
-                    parallel_results = self._execute_tools_parallel(
-                        tool_calls, session_db_id
-                    )
+                    parallel_results = self._execute_tools_parallel(tool_calls, session_db_id)
 
                     for i, (tool_call, result) in enumerate(
-                        zip(tool_calls, parallel_results)
+                        zip(tool_calls, parallel_results, strict=False)
                     ):
                         tool_calls_made += 1
                         tool_result = SkillResult(
@@ -399,17 +378,13 @@ class ToolOrchestrator:
 
                             if not tool_result.success:
                                 self._consecutive_errors += 1
-                                tool_name = tool_call.get("function", {}).get(
-                                    "name", "unknown"
-                                )
+                                tool_name = tool_call.get("function", {}).get("name", "unknown")
                                 self._error_count[tool_name] = (
                                     self._error_count.get(tool_name, 0) + 1
                                 )
 
                                 if self._should_revise_plan(iterations, tool_result):
-                                    reflection = self._reflect_on_observation(
-                                        tool_result, messages
-                                    )
+                                    reflection = self._reflect_on_observation(tool_result, messages)
                                     if reflection:
                                         messages.append(
                                             {
@@ -473,17 +448,13 @@ class ToolOrchestrator:
 
                             if not tool_result.success:
                                 self._consecutive_errors += 1
-                                tool_name = tool_call.get("function", {}).get(
-                                    "name", "unknown"
-                                )
+                                tool_name = tool_call.get("function", {}).get("name", "unknown")
                                 self._error_count[tool_name] = (
                                     self._error_count.get(tool_name, 0) + 1
                                 )
 
                                 if self._should_revise_plan(iterations, tool_result):
-                                    reflection = self._reflect_on_observation(
-                                        tool_result, messages
-                                    )
+                                    reflection = self._reflect_on_observation(tool_result, messages)
                                     if reflection:
                                         messages.append(
                                             {
@@ -545,7 +516,7 @@ class ToolOrchestrator:
                 error=f"Orchestration failed: {str(e)}",
             )
 
-    def _call_llm_with_tools(self, messages: List[Dict]) -> SkillResult:
+    def _call_llm_with_tools(self, messages: list[dict]) -> SkillResult:
         """Call LLM with tool definitions.
 
         Args:
@@ -585,7 +556,7 @@ class ToolOrchestrator:
         except Exception as e:
             return SkillResult(success=False, error=f"LLM request failed: {str(e)}")
 
-    def parse_tool_calls(self, response: Dict) -> List[Dict]:
+    def parse_tool_calls(self, response: dict) -> list[dict]:
         """Extract tool calls from LLM response.
 
         Args:
@@ -609,7 +580,7 @@ class ToolOrchestrator:
 
         return parsed_calls
 
-    def _execute_tool(self, tool_call: Dict) -> SkillResult:
+    def _execute_tool(self, tool_call: dict) -> SkillResult:
         """Execute a single tool call with retry logic.
 
         Args:
@@ -624,15 +595,11 @@ class ToolOrchestrator:
             arguments_str = function_info.get("arguments", "{}")
 
             if not function_name:
-                return SkillResult(
-                    success=False, error="Tool call missing function name"
-                )
+                return SkillResult(success=False, error="Tool call missing function name")
 
             skill = self.skills.get(function_name)
             if not skill:
-                return SkillResult(
-                    success=False, error=f"Tool '{function_name}' not found"
-                )
+                return SkillResult(success=False, error=f"Tool '{function_name}' not found")
 
             arguments = json.loads(arguments_str)
 
@@ -647,9 +614,7 @@ class ToolOrchestrator:
             return result
 
         except json.JSONDecodeError as e:
-            return SkillResult(
-                success=False, error=f"Failed to parse tool arguments: {str(e)}"
-            )
+            return SkillResult(success=False, error=f"Failed to parse tool arguments: {str(e)}")
         except Exception as e:
             return SkillResult(success=False, error=f"Tool execution failed: {str(e)}")
 
@@ -694,7 +659,7 @@ class ToolOrchestrator:
         self,
         session_id: int,
         call_index: int,
-        tool_call: Dict,
+        tool_call: dict,
         tool_result: SkillResult,
     ):
         """Track tool call in database.
@@ -734,9 +699,7 @@ class ToolOrchestrator:
                 success=tool_result.success,
                 data=tool_result.data if tool_result.success else None,
                 error=tool_result.error if not tool_result.success else None,
-                result_size_bytes=(
-                    len(json.dumps(tool_result.data)) if tool_result.data else 0
-                ),
+                result_size_bytes=(len(json.dumps(tool_result.data)) if tool_result.data else 0),
                 metadata=None,
             )
         except Exception as e:
@@ -748,9 +711,9 @@ class ToolOrchestrator:
         iteration: int,
         step_type: str,
         content: str,
-        tool_call_id: Optional[int] = None,
-        metadata: Optional[Dict] = None,
-    ) -> Optional[int]:
+        tool_call_id: int | None = None,
+        metadata: dict | None = None,
+    ) -> int | None:
         """Track a reasoning step in database.
 
         Args:
@@ -780,7 +743,7 @@ class ToolOrchestrator:
             logger.error(f"Failed to track reasoning step: {e}")
             return None
 
-    def _call_llm_with_react(self, messages: List[Dict]) -> SkillResult:
+    def _call_llm_with_react(self, messages: list[dict]) -> SkillResult:
         """Call LLM with ReAct prompt.
 
         Args:
@@ -824,7 +787,7 @@ class ToolOrchestrator:
         except Exception as e:
             return SkillResult(success=False, error=f"LLM request failed: {str(e)}")
 
-    def _extract_reasoning(self, message: Dict) -> Optional[str]:
+    def _extract_reasoning(self, message: dict) -> str | None:
         """Extract reasoning from LLM message.
 
         Args:
@@ -844,7 +807,7 @@ class ToolOrchestrator:
                 return match.group(1).strip()
         return None
 
-    def _extract_reasoning_content(self, message: Dict) -> Optional[str]:
+    def _extract_reasoning_content(self, message: dict) -> str | None:
         """Extract reasoning content from LLM message.
 
         Args:
@@ -898,8 +861,7 @@ class ToolOrchestrator:
         """
         if tool_result.success:
             return f"Success: {json.dumps(tool_result.data, default=str)[:200]}"
-        else:
-            return f"Error: {tool_result.error}"
+        return f"Error: {tool_result.error}"
 
     def _should_revise_plan(self, iteration: int, tool_result: SkillResult) -> bool:
         """Determine if plan should be revised based on errors.
@@ -922,9 +884,7 @@ class ToolOrchestrator:
 
         return False
 
-    def _reflect_on_observation(
-        self, tool_result: SkillResult, messages: List[Dict]
-    ) -> Optional[str]:
+    def _reflect_on_observation(self, tool_result: SkillResult, messages: list[dict]) -> str | None:
         """Generate reflection on observation.
 
         Args:
@@ -939,8 +899,8 @@ class ToolOrchestrator:
         return None
 
     def _execute_tools_parallel(
-        self, tool_calls: List[Dict], session_id: Optional[int] = None
-    ) -> List[Dict]:
+        self, tool_calls: list[dict], session_id: int | None = None
+    ) -> list[dict]:
         """Execute tools in parallel where safe.
 
         Args:
@@ -951,9 +911,7 @@ class ToolOrchestrator:
             List of results
         """
         try:
-            parallel_result = self.parallel_executor.execute_parallel(
-                tool_calls, session_id
-            )
+            parallel_result = self.parallel_executor.execute_parallel(tool_calls, session_id)
             return parallel_result.results
         except Exception as e:
             logger.warning(f"Parallel execution failed, falling back: {e}")

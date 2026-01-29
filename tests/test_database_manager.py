@@ -1,12 +1,11 @@
-import pytest
-import sqlite3
 import json
-import tempfile
 import shutil
-from pathlib import Path
+import sqlite3
+import tempfile
 from datetime import datetime
-from unittest.mock import patch, MagicMock
+from pathlib import Path
 
+import pytest
 from core.database_manager import DatabaseManager
 
 
@@ -255,9 +254,7 @@ class TestSessionOperations:
 class TestMessageOperations:
     """Tests for message operations."""
 
-    def test_add_message_basic(
-        self, db_manager, sample_session_data, sample_message_data
-    ):
+    def test_add_message_basic(self, db_manager, sample_session_data, sample_message_data):
         """Test adding a basic message."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -335,9 +332,7 @@ class TestMessageOperations:
         messages = db_manager.get_session_messages(session_id)
         assert messages == []
 
-    def test_add_message_with_parent(
-        self, db_manager, sample_session_data, sample_message_data
-    ):
+    def test_add_message_with_parent(self, db_manager, sample_session_data, sample_message_data):
         """Test adding a message with a parent message."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -450,9 +445,7 @@ class TestLLMResponseOperations:
 class TestToolCallOperations:
     """Tests for tool call operations."""
 
-    def test_add_tool_call_basic(
-        self, db_manager, sample_session_data, sample_tool_call_data
-    ):
+    def test_add_tool_call_basic(self, db_manager, sample_session_data, sample_tool_call_data):
         """Test adding a basic tool call."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -506,9 +499,7 @@ class TestToolCallOperations:
             assert tool_call["retry_count"] == 2
             assert tool_call["is_parallel"] == 1
 
-    def test_add_tool_result_basic(
-        self, db_manager, sample_session_data, sample_tool_call_data
-    ):
+    def test_add_tool_result_basic(self, db_manager, sample_session_data, sample_tool_call_data):
         """Test adding a basic tool result."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -616,9 +607,7 @@ class TestTestCaseOperations:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         assert isinstance(test_run_id, int)
         assert test_run_id > 0
@@ -662,9 +651,7 @@ class TestTestCaseOperations:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         db_manager.update_test_run(
             test_run_id,
@@ -697,9 +684,7 @@ class TestJudgeEvaluationOperations:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         evaluation_id = db_manager.add_judge_evaluation(
             test_run_id=test_run_id,
@@ -712,9 +697,7 @@ class TestJudgeEvaluationOperations:
         assert isinstance(evaluation_id, int)
         assert evaluation_id > 0
 
-    def test_add_judge_evaluation_with_all_fields(
-        self, db_manager, sample_test_case_data
-    ):
+    def test_add_judge_evaluation_with_all_fields(self, db_manager, sample_test_case_data):
         """Test adding a judge evaluation with all fields."""
         test_case_id = db_manager.create_test_case(
             name=sample_test_case_data["name"],
@@ -724,9 +707,7 @@ class TestJudgeEvaluationOperations:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         evaluation_id = db_manager.add_judge_evaluation(
             test_run_id=test_run_id,
@@ -744,9 +725,7 @@ class TestJudgeEvaluationOperations:
 
         with db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM judge_evaluations WHERE id = ?", (evaluation_id,)
-            )
+            cursor.execute("SELECT * FROM judge_evaluations WHERE id = ?", (evaluation_id,))
             evaluation = dict(cursor.fetchone())
 
             assert evaluation["evaluation_type"] == "semantic"
@@ -812,9 +791,7 @@ class TestReasoningStepOperations:
 class TestErrorRecoveryOperations:
     """Tests for error recovery operations."""
 
-    def test_add_error_recovery_basic(
-        self, db_manager, sample_session_data, sample_tool_call_data
-    ):
+    def test_add_error_recovery_basic(self, db_manager, sample_session_data, sample_tool_call_data):
         """Test adding a basic error recovery."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -919,9 +896,7 @@ class TestPerformanceMetricsOperations:
 
         with db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM performance_metrics WHERE id = ?", (metric_id,)
-            )
+            cursor.execute("SELECT * FROM performance_metrics WHERE id = ?", (metric_id,))
             metric = dict(cursor.fetchone())
 
             assert metric["metric_name"] == "memory_usage"
@@ -946,9 +921,7 @@ class TestQueryMethods:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         db_manager.update_test_run(
             test_run_id,
@@ -1056,9 +1029,7 @@ class TestExportFunctionality:
         )
 
         file_path = Path(temp_db_path).parent / "export.json"
-        result_path = db_manager.export_to_json(
-            "SELECT * FROM sessions", file_path=str(file_path)
-        )
+        result_path = db_manager.export_to_json("SELECT * FROM sessions", file_path=str(file_path))
 
         assert result_path == str(file_path)
         assert file_path.exists()
@@ -1091,16 +1062,12 @@ class TestEdgeCases:
     def test_foreign_key_constraint_message_invalid_session(self, db_manager):
         """Test foreign key constraint for invalid session in message."""
         with pytest.raises(sqlite3.IntegrityError):
-            db_manager.add_message(
-                session_id=99999, role="user", content="test", message_index=0
-            )
+            db_manager.add_message(session_id=99999, role="user", content="test", message_index=0)
 
     def test_foreign_key_constraint_tool_result_invalid_tool_call(self, db_manager):
         """Test foreign key constraint for invalid tool call in tool result."""
         with pytest.raises(sqlite3.IntegrityError):
-            db_manager.add_tool_result(
-                tool_call_id=99999, success=True, data={"result": "test"}
-            )
+            db_manager.add_tool_result(tool_call_id=99999, success=True, data={"result": "test"})
 
     def test_json_serialization_complex_metadata(self, db_manager, sample_session_data):
         """Test JSON serialization of complex metadata."""
@@ -1168,9 +1135,7 @@ class TestEdgeCases:
 
         with db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT parameters FROM tool_calls WHERE id = ?", (tool_call_id,)
-            )
+            cursor.execute("SELECT parameters FROM tool_calls WHERE id = ?", (tool_call_id,))
             params = json.loads(cursor.fetchone()["parameters"])
             assert params == {}
 
@@ -1276,14 +1241,13 @@ class TestTransactionRollback:
 
         initial_session = db_manager.get_session(session_id)
 
-        with pytest.raises(sqlite3.IntegrityError):
-            with db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "INSERT INTO sessions (session_id, session_type, model) VALUES (?, ?, ?)",
-                    (sample_session_data["session_id"], "test", "gpt-4"),
-                )
-                cursor.execute("INVALID SQL STATEMENT")
+        with pytest.raises(sqlite3.IntegrityError), db_manager.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO sessions (session_id, session_type, model) VALUES (?, ?, ?)",
+                (sample_session_data["session_id"], "test", "gpt-4"),
+            )
+            cursor.execute("INVALID SQL STATEMENT")
 
         session_after = db_manager.get_session(session_id)
         assert session_after == initial_session
@@ -1299,9 +1263,7 @@ class TestTransactionRollback:
 
         with db_manager.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM sessions WHERE session_id = ?", ("test-context-commit",)
-            )
+            cursor.execute("SELECT * FROM sessions WHERE session_id = ?", ("test-context-commit",))
             result = cursor.fetchone()
             assert result is not None
 
@@ -1360,9 +1322,7 @@ class TestParameterizedTests:
             ("custom", True),
         ],
     )
-    def test_add_message_various_roles(
-        self, db_manager, sample_session_data, role, expected_valid
-    ):
+    def test_add_message_various_roles(self, db_manager, sample_session_data, role, expected_valid):
         """Test adding messages with various roles."""
         session_id = db_manager.create_session(
             session_id=sample_session_data["session_id"],
@@ -1430,9 +1390,7 @@ class TestParameterizedTests:
             tools=sample_test_case_data["tools"],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         evaluation_id = db_manager.add_judge_evaluation(
             test_run_id=test_run_id,

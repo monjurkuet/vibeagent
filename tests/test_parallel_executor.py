@@ -1,22 +1,18 @@
 """Example usage and tests for ParallelExecutor."""
 
 import json
+import sys
 import time
 from pathlib import Path
-import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from core.database_manager import DatabaseManager
 from core.parallel_executor import (
     ParallelExecutor,
     ParallelExecutorConfig,
-    ToolCallInfo,
-    ParallelBatch,
-    ParallelExecutionStatus,
-    ParallelExecutionResult,
 )
 from core.skill import BaseSkill, SkillResult
-from core.database_manager import DatabaseManager
 
 
 class MockSkill(BaseSkill):
@@ -126,9 +122,7 @@ def test_basic_parallel_execution():
 
     start_seq = time.time()
     for tc in tool_calls:
-        skills[tc["function"]["name"]].execute(
-            **json.loads(tc["function"]["arguments"])
-        )
+        skills[tc["function"]["name"]].execute(**json.loads(tc["function"]["arguments"]))
     sequential_time = time.time() - start_seq
 
     actual_speedup = sequential_time / parallel_time if parallel_time > 0 else 1.0

@@ -1,1 +1,0 @@
-{"name": "vibeagent-frontend", "version": "1.0.0", "description": "VibeAgent Dashboard Frontend", "scripts": {"start": "python -m http.server 3000"}, "keywords": ["vibeagent", "dashboard"], "author": "", "license": "ISC"}

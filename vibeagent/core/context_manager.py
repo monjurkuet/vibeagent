@@ -1,14 +1,14 @@
 """Context management system for efficient conversation handling."""
 
+import hashlib
 import json
 import logging
 import re
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
-from enum import Enum
-from datetime import datetime, timedelta
 from collections import defaultdict
-import hashlib
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class ContextConfig:
 
     max_context_tokens: int = 8000
     summary_threshold: int = 4000
-    importance_weights: Dict[str, float] = field(
+    importance_weights: dict[str, float] = field(
         default_factory=lambda: {
             "user_message": 1.0,
             "assistant_message": 0.8,
@@ -63,7 +63,7 @@ class MessageScore:
     importance_score: float
     recency_score: float
     final_score: float
-    factors: Dict[str, float] = field(default_factory=dict)
+    factors: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -74,7 +74,7 @@ class ContextSummary:
     summarized_messages: int
     token_reduction: float
     summary_text: str
-    key_points: List[str]
+    key_points: list[str]
     created_at: datetime = field(default_factory=datetime.now)
 
 
@@ -87,15 +87,15 @@ class ContextAnalysis:
     redundant_messages: int
     compression_potential: float
     quality_score: float
-    gaps: List[str]
-    suggestions: List[str]
+    gaps: list[str]
+    suggestions: list[str]
 
 
 @dataclass
 class ContextWindow:
     """A window of context messages."""
 
-    messages: List[Dict]
+    messages: list[dict]
     start_index: int
     end_index: int
     tokens: int
@@ -107,7 +107,7 @@ class ContextManager:
 
     def __init__(
         self,
-        config: Optional[ContextConfig] = None,
+        config: ContextConfig | None = None,
         db_manager=None,
         llm_skill=None,
     ):
@@ -122,10 +122,10 @@ class ContextManager:
         self.db_manager = db_manager
         self.llm_skill = llm_skill
 
-        self._context_cache: Dict[str, List[Dict]] = {}
-        self._summary_cache: Dict[str, ContextSummary] = {}
-        self._usage_patterns: Dict[str, List[datetime]] = defaultdict(list)
-        self._token_history: List[Tuple[datetime, int]] = []
+        self._context_cache: dict[str, list[dict]] = {}
+        self._summary_cache: dict[str, ContextSummary] = {}
+        self._usage_patterns: dict[str, list[datetime]] = defaultdict(list)
+        self._token_history: list[tuple[datetime, int]] = []
 
         self._initialize_database()
 
@@ -181,9 +181,7 @@ class ContextManager:
         except Exception as e:
             logger.error(f"Failed to initialize context database: {e}")
 
-    def manage_context(
-        self, messages: List[Dict], max_tokens: Optional[int] = None
-    ) -> List[Dict]:
+    def manage_context(self, messages: list[dict], max_tokens: int | None = None) -> list[dict]:
         """Manage context within token limits using sliding window.
 
         Args:
@@ -209,9 +207,7 @@ class ContextManager:
         )
 
         scored_messages = self._score_messages(messages)
-        sorted_messages = sorted(
-            scored_messages, key=lambda x: x.final_score, reverse=True
-        )
+        sorted_messages = sorted(scored_messages, key=lambda x: x.final_score, reverse=True)
 
         selected_messages = []
         selected_tokens = 0
@@ -235,7 +231,7 @@ class ContextManager:
 
         return selected_messages
 
-    def calculate_importance(self, message: Dict) -> MessageScore:
+    def calculate_importance(self, message: dict) -> MessageScore:
         """Calculate importance score for a message.
 
         Args:
@@ -299,7 +295,7 @@ class ContextManager:
             factors=factors,
         )
 
-    def _score_messages(self, messages: List[Dict]) -> List[MessageScore]:
+    def _score_messages(self, messages: list[dict]) -> list[MessageScore]:
         """Score all messages with importance and recency.
 
         Args:
@@ -318,9 +314,7 @@ class ContextManager:
             recency_position = idx / max(total_messages, 1)
             msg_score.recency_score = (
                 1.0 - recency_position
-            ) * self.config.recency_weight + recency_position * (
-                1.0 - self.config.recency_weight
-            )
+            ) * self.config.recency_weight + recency_position * (1.0 - self.config.recency_weight)
 
             msg_score.final_score = (
                 msg_score.importance_score * (1.0 - self.config.recency_weight)
@@ -332,7 +326,7 @@ class ContextManager:
         return scored_messages
 
     def summarize_messages(
-        self, messages: List[Dict], target_reduction: float = 0.65
+        self, messages: list[dict], target_reduction: float = 0.65
     ) -> ContextSummary:
         """Summarize a group of messages to reduce token count.
 
@@ -385,7 +379,7 @@ class ContextManager:
 
         return summary
 
-    def _extract_key_points(self, messages: List[Dict]) -> List[str]:
+    def _extract_key_points(self, messages: list[dict]) -> list[str]:
         """Extract key points from messages.
 
         Args:
@@ -420,25 +414,23 @@ class ContextManager:
 
             elif role == "tool":
                 if "success" in content.lower():
-                    key_points.append(f"Tool executed successfully")
+                    key_points.append("Tool executed successfully")
                 elif "error" in content.lower():
-                    error_match = re.search(r"error[:\s]*(.*?)(?:\n|$)", content, re.I)
+                    error_match = re.search(r"error[:\s]*(.*?)(?:\n|$)", content, re.IGNORECASE)
                     if error_match:
                         key_points.append(f"Tool error: {error_match.group(1).strip()}")
 
             elif role == "assistant":
                 if "final answer" in content.lower():
                     answer_match = re.search(
-                        r"final answer[:\s]*(.*?)(?:\n|$)", content, re.I
+                        r"final answer[:\s]*(.*?)(?:\n|$)", content, re.IGNORECASE
                     )
                     if answer_match:
-                        key_points.append(
-                            f"Final answer: {answer_match.group(1).strip()[:100]}"
-                        )
+                        key_points.append(f"Final answer: {answer_match.group(1).strip()[:100]}")
 
         return key_points[:10]
 
-    def _create_summary_text(self, messages: List[Dict], key_points: List[str]) -> str:
+    def _create_summary_text(self, messages: list[dict], key_points: list[str]) -> str:
         """Create summary text from messages and key points.
 
         Args:
@@ -456,7 +448,7 @@ class ContextManager:
 
         return "\n".join(summary_parts)
 
-    def compress_context(self, messages: List[Dict]) -> List[Dict]:
+    def compress_context(self, messages: list[dict]) -> list[dict]:
         """Compress context by removing redundancy and merging similar messages.
 
         Args:
@@ -506,8 +498,8 @@ class ContextManager:
         return compressed
 
     def retrieve_relevant_context(
-        self, query: str, history: List[Dict], max_results: int = 5
-    ) -> List[Dict]:
+        self, query: str, history: list[dict], max_results: int = 5
+    ) -> list[dict]:
         """Retrieve relevant context from conversation history.
 
         Args:
@@ -547,10 +539,10 @@ class ContextManager:
 
     def get_context(
         self,
-        messages: List[Dict],
+        messages: list[dict],
         context_type: ContextType = ContextType.FULL,
-        max_tokens: Optional[int] = None,
-    ) -> List[Dict]:
+        max_tokens: int | None = None,
+    ) -> list[dict]:
         """Get context in specified format.
 
         Args:
@@ -566,7 +558,7 @@ class ContextManager:
         if context_type == ContextType.FULL:
             return self.manage_context(messages, max_tokens)
 
-        elif context_type == ContextType.SUMMARY:
+        if context_type == ContextType.SUMMARY:
             current_tokens = self.get_token_usage(messages)
 
             if current_tokens > self.config.summary_threshold:
@@ -575,17 +567,15 @@ class ContextManager:
 
             return self.manage_context(messages, max_tokens)
 
-        elif context_type == ContextType.RELEVANT:
+        if context_type == ContextType.RELEVANT:
             if messages:
-                last_user_msg = [
-                    m for m in reversed(messages) if m.get("role") == "user"
-                ]
+                last_user_msg = [m for m in reversed(messages) if m.get("role") == "user"]
                 if last_user_msg:
                     query = last_user_msg[0].get("content", "")
                     return self.retrieve_relevant_context(query, messages)
             return messages[:5]
 
-        elif context_type == ContextType.MINIMAL:
+        if context_type == ContextType.MINIMAL:
             essential = self.get_essential_messages(messages)
             return self.manage_context(essential, max_tokens)
 
@@ -611,7 +601,7 @@ class ContextManager:
 
         return int(max(word_tokens, char_tokens))
 
-    def get_token_usage(self, messages: List[Dict]) -> int:
+    def get_token_usage(self, messages: list[dict]) -> int:
         """Get current token usage for messages.
 
         Args:
@@ -622,7 +612,7 @@ class ContextManager:
         """
         return sum(self.estimate_tokens(json.dumps(msg)) for msg in messages)
 
-    def optimize_for_tokens(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
+    def optimize_for_tokens(self, messages: list[dict], max_tokens: int) -> list[dict]:
         """Optimize context for token limits.
 
         Args:
@@ -644,7 +634,7 @@ class ContextManager:
 
         return self.manage_context(messages, max_tokens)
 
-    def analyze_context(self, messages: List[Dict]) -> ContextAnalysis:
+    def analyze_context(self, messages: list[dict]) -> ContextAnalysis:
         """Analyze context quality and potential improvements.
 
         Args:
@@ -670,9 +660,7 @@ class ContextManager:
             suggestions.append("Consider summarizing older messages")
 
         if compression_potential > 0.2:
-            suggestions.append(
-                f"Found {redundant_messages} redundant messages that can be removed"
-            )
+            suggestions.append(f"Found {redundant_messages} redundant messages that can be removed")
 
         if total_tokens > self.config.max_context_tokens:
             gaps.append("Context exceeds token limits")
@@ -691,7 +679,7 @@ class ContextManager:
             suggestions=suggestions,
         )
 
-    def is_tool_result_important(self, result: Dict) -> bool:
+    def is_tool_result_important(self, result: dict) -> bool:
         """Check if tool result is important enough to keep.
 
         Args:
@@ -710,10 +698,7 @@ class ContextManager:
 
         result_lower = result_str.lower()
 
-        if any(
-            keyword in result_lower
-            for keyword in ["error", "fail", "exception", "timeout"]
-        ):
+        if any(keyword in result_lower for keyword in ["error", "fail", "exception", "timeout"]):
             return True
 
         if "success" in result_lower and len(result_str) < 500:
@@ -724,7 +709,7 @@ class ContextManager:
 
         return True
 
-    def get_essential_messages(self, messages: List[Dict]) -> List[Dict]:
+    def get_essential_messages(self, messages: list[dict]) -> list[dict]:
         """Get only essential messages from context.
 
         Args:
@@ -755,7 +740,7 @@ class ContextManager:
 
         return essential
 
-    def merge_similar_messages(self, messages: List[Dict]) -> List[Dict]:
+    def merge_similar_messages(self, messages: list[dict]) -> list[dict]:
         """Merge similar consecutive messages.
 
         Args:
@@ -776,15 +761,12 @@ class ContextManager:
             if i + 1 < len(messages):
                 next_msg = messages[i + 1]
 
-                if current.get("role") == next_msg.get("role") and current.get(
-                    "role"
-                ) in ["tool", "assistant"]:
-                    merged_content = (
-                        current.get("content", "") + "\n" + next_msg.get("content", "")
-                    )
-                    merged.append(
-                        {"role": current.get("role"), "content": merged_content}
-                    )
+                if current.get("role") == next_msg.get("role") and current.get("role") in [
+                    "tool",
+                    "assistant",
+                ]:
+                    merged_content = current.get("content", "") + "\n" + next_msg.get("content", "")
+                    merged.append({"role": current.get("role"), "content": merged_content})
                     i += 2
                     continue
 
@@ -793,7 +775,7 @@ class ContextManager:
 
         return merged
 
-    def detect_redundancy(self, messages: List[Dict]) -> List[set]:
+    def detect_redundancy(self, messages: list[dict]) -> list[set]:
         """Detect redundant messages.
 
         Args:
@@ -816,7 +798,7 @@ class ContextManager:
 
         return redundancy_groups
 
-    def _hash_message(self, message: Dict) -> str:
+    def _hash_message(self, message: dict) -> str:
         """Generate hash for message deduplication.
 
         Args:
@@ -833,7 +815,7 @@ class ContextManager:
 
         return hashlib.md5(hash_input.encode()).hexdigest()
 
-    def _generate_cache_key(self, messages: List[Dict]) -> str:
+    def _generate_cache_key(self, messages: list[dict]) -> str:
         """Generate cache key for messages.
 
         Args:
@@ -878,7 +860,7 @@ class ContextManager:
         except Exception as e:
             logger.error(f"Failed to store summary: {e}")
 
-    def get_usage_statistics(self) -> Dict[str, Any]:
+    def get_usage_statistics(self) -> dict[str, Any]:
         """Get context usage statistics.
 
         Returns:

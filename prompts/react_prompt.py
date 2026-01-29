@@ -4,7 +4,6 @@ This module provides production-ready prompt templates for implementing the ReAc
 in multi-agent systems, improving tool calling success rates through structured reasoning.
 """
 
-from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
 
@@ -18,7 +17,7 @@ class PromptTemplate:
     model_type: str = "default"
 
 
-REACT_SYSTEM_PROMPTS: Dict[str, PromptTemplate] = {
+REACT_SYSTEM_PROMPTS: dict[str, PromptTemplate] = {
     "default": PromptTemplate(
         name="default_react_system",
         template="""You are an intelligent agent that uses tools to complete tasks by following the ReAct (Reasoning + Acting) pattern.
@@ -107,7 +106,7 @@ Thought: I need to search for X and Y, these are independent
 Action: arxiv_search
 Action Input: {"query": "X"}
 Thought: Now I'll search for Y in parallel
-Action: arxiv_search  
+Action: arxiv_search
 Action Input: {"query": "Y"}
 
 AVAILABLE TOOLS:
@@ -205,7 +204,7 @@ AVAILABLE TOOLS:
 }
 
 
-FEW_SHOT_EXAMPLES: Dict[str, List[Dict]] = {
+FEW_SHOT_EXAMPLES: dict[str, list[dict]] = {
     "simple": [
         {
             "name": "Simple ArXiv Search",
@@ -411,7 +410,7 @@ FEW_SHOT_EXAMPLES: Dict[str, List[Dict]] = {
 
 
 def get_react_system_prompt(
-    model_type: str = "default", tool_descriptions: Optional[List[str]] = None
+    model_type: str = "default", tool_descriptions: list[str] | None = None
 ) -> str:
     """Get a ReAct system prompt for a specific model type.
 
@@ -435,7 +434,7 @@ def get_react_system_prompt(
     return template.replace("{{tool_descriptions}}", tool_desc_text)
 
 
-def get_few_shot_examples(category: Optional[str] = None) -> List[Dict]:
+def get_few_shot_examples(category: str | None = None) -> list[dict]:
     """Get few-shot examples for ReAct prompting.
 
     Args:
@@ -454,7 +453,7 @@ def get_few_shot_examples(category: Optional[str] = None) -> List[Dict]:
     return all_examples
 
 
-def format_example(example: Dict) -> str:
+def format_example(example: dict) -> str:
     """Format a single example as a demonstration string.
 
     Args:
@@ -480,12 +479,12 @@ def format_example(example: Dict) -> str:
 
 
 def build_react_prompt(
-    messages: List[Dict],
-    tools: List[Dict],
+    messages: list[dict],
+    tools: list[dict],
     model_type: str = "default",
     include_examples: bool = True,
-    example_categories: Optional[List[str]] = None,
-) -> List[Dict]:
+    example_categories: list[str] | None = None,
+) -> list[dict]:
     """Build a complete ReAct prompt with system message, examples, and conversation.
 
     Args:
@@ -531,7 +530,7 @@ def build_react_prompt(
     return result_messages
 
 
-def get_example_by_name(name: str) -> Optional[Dict]:
+def get_example_by_name(name: str) -> dict | None:
     """Find a specific example by name.
 
     Args:
@@ -547,7 +546,7 @@ def get_example_by_name(name: str) -> Optional[Dict]:
     return None
 
 
-def validate_prompt_structure(messages: List[Dict]) -> bool:
+def validate_prompt_structure(messages: list[dict]) -> bool:
     """Validate that the prompt has proper ReAct structure.
 
     Args:
@@ -565,7 +564,7 @@ def validate_prompt_structure(messages: List[Dict]) -> bool:
     return has_system and has_user
 
 
-def extract_tool_descriptions(tools: List[Dict]) -> List[str]:
+def extract_tool_descriptions(tools: list[dict]) -> list[str]:
     """Extract human-readable descriptions from tool schemas.
 
     Args:
@@ -599,7 +598,7 @@ def extract_tool_descriptions(tools: List[Dict]) -> List[str]:
 
 
 def build_tool_focused_prompt(
-    tools: List[Dict], task_description: str, model_type: str = "default"
+    tools: list[dict], task_description: str, model_type: str = "default"
 ) -> str:
     """Build a prompt focused on a specific task with relevant tools.
 

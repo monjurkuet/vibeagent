@@ -6,11 +6,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import logging
+
 from core.self_corrector import (
     SelfCorrector,
     SelfCorrectorConfig,
-    CorrectionTrigger,
-    CorrectionType,
 )
 from core.skill import SkillResult
 
@@ -53,7 +52,7 @@ def example_basic_correction():
     if should_correct:
         reflection = corrector.reflect_on_failure(tool_result.error, context)
 
-        print(f"\nReflection:")
+        print("\nReflection:")
         print(f"  Error pattern: {reflection['error_pattern']}")
         print(f"  Root causes: {reflection['root_causes']}")
 
@@ -76,7 +75,7 @@ def example_basic_correction():
                 print(f"Error: {result.error}")
 
     stats = corrector.get_correction_statistics()
-    print(f"\nCorrection statistics:")
+    print("\nCorrection statistics:")
     print(f"  Total attempts: {stats['total_attempts']}")
     print(f"  Success rate: {stats['success_rate']:.2%}")
 
@@ -159,12 +158,10 @@ def example_learning_from_corrections():
                 best = corrector.select_best_strategy(alternatives)
                 if best:
                     result = corrector.apply_correction(best, context)
-                    print(
-                        f"Attempt {i + 1}: {'Success' if result.success else 'Failed'}"
-                    )
+                    print(f"Attempt {i + 1}: {'Success' if result.success else 'Failed'}")
 
     stats = corrector.get_correction_statistics()
-    print(f"\nFinal statistics:")
+    print("\nFinal statistics:")
     print(f"  Total attempts: {stats['total_attempts']}")
     print(f"  Successful: {stats['successful_corrections']}")
     print(f"  Failed: {stats['failed_corrections']}")
@@ -326,7 +323,7 @@ def example_integration_with_tool_orchestrator():
             print(f"  Execution: {'Success' if tool_result.success else 'Failed'}")
 
     stats = corrector.get_correction_statistics()
-    print(f"\nFinal statistics:")
+    print("\nFinal statistics:")
     print(f"  Total corrections: {stats['total_attempts']}")
     print(f"  Success rate: {stats['success_rate']:.2%}")
     print(f"  By trigger: {stats['by_trigger']}")

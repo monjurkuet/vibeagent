@@ -1,19 +1,18 @@
 """Plan-and-Execute orchestrator for complex multi-step tasks."""
 
 import json
-import uuid
-import time
 import logging
-from typing import Dict, List, Optional, Any, Set, Tuple
+import time
+import uuid
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
-from collections import defaultdict, deque
+from enum import Enum
+from typing import Any
 
-from .skill import BaseSkill, SkillResult
-from .tool_orchestrator import ToolOrchestrator, OrchestratorResult
 from .parallel_executor import ParallelExecutor, ParallelExecutorConfig
 from .retry_manager import RetryManager
+from .skill import BaseSkill, SkillResult
+from .tool_orchestrator import OrchestratorResult, ToolOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -48,19 +47,19 @@ class PlanStep:
     step_type: StepType
     action: str
     tool: str
-    parameters: Dict[str, Any]
-    dependencies: List[str] = field(default_factory=list)
+    parameters: dict[str, Any]
+    dependencies: list[str] = field(default_factory=list)
     status: StepStatus = StepStatus.PENDING
     complexity: int = 1
-    condition: Optional[str] = None
-    loop_count: Optional[int] = None
-    fallback_for: Optional[str] = None
-    result: Optional[SkillResult] = None
-    error: Optional[str] = None
+    condition: str | None = None
+    loop_count: int | None = None
+    fallback_for: str | None = None
+    result: SkillResult | None = None
+    error: str | None = None
     execution_time_ms: float = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert step to dictionary."""
         return {
             "step_id": self.step_id,
@@ -93,14 +92,14 @@ class Plan:
 
     plan_id: str
     goal: str
-    steps: List[PlanStep]
-    context: Dict[str, Any] = field(default_factory=dict)
+    steps: list[PlanStep]
+    context: dict[str, Any] = field(default_factory=dict)
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     modified_at: str = field(default_factory=lambda: datetime.now().isoformat())
     status: str = "created"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def get_step(self, step_id: str) -> Optional[PlanStep]:
+    def get_step(self, step_id: str) -> PlanStep | None:
         """Get step by ID."""
         for step in self.steps:
             if step.step_id == step_id:
@@ -121,35 +120,29 @@ class Plan:
                 return True
         return False
 
-    def get_ready_steps(self) -> List[PlanStep]:
+    def get_ready_steps(self) -> list[PlanStep]:
         """Get steps that are ready to execute."""
         ready_steps = []
-        completed_ids = {
-            s.step_id for s in self.steps if s.status == StepStatus.COMPLETED
-        }
+        completed_ids = {s.step_id for s in self.steps if s.status == StepStatus.COMPLETED}
 
         for step in self.steps:
             if step.status == StepStatus.READY:
                 ready_steps.append(step)
             elif step.status == StepStatus.PENDING:
-                deps_satisfied = all(
-                    dep_id in completed_ids for dep_id in step.dependencies
-                )
+                deps_satisfied = all(dep_id in completed_ids for dep_id in step.dependencies)
                 if deps_satisfied:
                     step.status = StepStatus.READY
                     ready_steps.append(step)
 
         return ready_steps
 
-    def get_parallel_ready_steps(self) -> List[List[PlanStep]]:
+    def get_parallel_ready_steps(self) -> list[list[PlanStep]]:
         """Get groups of steps that can execute in parallel."""
         ready = self.get_ready_steps()
         if not ready:
             return []
 
-        completed_ids = {
-            s.step_id for s in self.steps if s.status == StepStatus.COMPLETED
-        }
+        completed_ids = {s.step_id for s in self.steps if s.status == StepStatus.COMPLETED}
         parallel_groups = []
 
         for step in ready:
@@ -173,9 +166,7 @@ class Plan:
 
     def is_complete(self) -> bool:
         """Check if plan is complete."""
-        return all(
-            s.status in [StepStatus.COMPLETED, StepStatus.SKIPPED] for s in self.steps
-        )
+        return all(s.status in [StepStatus.COMPLETED, StepStatus.SKIPPED] for s in self.steps)
 
     def is_failed(self) -> bool:
         """Check if plan has failed."""
@@ -187,13 +178,11 @@ class Plan:
             return 0.0
 
         completed = sum(
-            1
-            for s in self.steps
-            if s.status in [StepStatus.COMPLETED, StepStatus.SKIPPED]
+            1 for s in self.steps if s.status in [StepStatus.COMPLETED, StepStatus.SKIPPED]
         )
         return (completed / len(self.steps)) * 100
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert plan to dictionary."""
         return {
             "plan_id": self.plan_id,
@@ -212,11 +201,11 @@ class PlanValidationResult:
     """Result of plan validation."""
 
     is_valid: bool
-    errors: List[str] = field(default_factory=list)
-    warnings: List[str] = field(default_factory=list)
-    circular_dependencies: List[List[str]] = field(default_factory=list)
-    missing_tools: List[str] = field(default_factory=list)
-    missing_parameters: List[Tuple[str, str]] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    circular_dependencies: list[list[str]] = field(default_factory=list)
+    missing_tools: list[str] = field(default_factory=list)
+    missing_parameters: list[tuple[str, str]] = field(default_factory=list)
 
 
 @dataclass
@@ -229,9 +218,9 @@ class PlanExecutionResult:
     steps_completed: int
     steps_failed: int
     steps_skipped: int
-    errors: List[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     final_response: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class PlanExecuteOrchestratorConfig:
@@ -268,9 +257,9 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
     def __init__(
         self,
         llm_skill,
-        skills: Dict[str, BaseSkill],
+        skills: dict[str, BaseSkill],
         db_manager=None,
-        config: Optional[PlanExecuteOrchestratorConfig] = None,
+        config: PlanExecuteOrchestratorConfig | None = None,
     ):
         """Initialize the Plan-and-Execute orchestrator.
 
@@ -283,8 +272,8 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
         super().__init__(llm_skill, skills, db_manager, use_react=False)
 
         self.config = config or PlanExecuteOrchestratorConfig()
-        self._plan_history: List[Plan] = []
-        self._plan_templates: Dict[str, Plan] = {}
+        self._plan_history: list[Plan] = []
+        self._plan_templates: dict[str, Plan] = {}
 
         self.parallel_executor = ParallelExecutor(
             skills=skills,
@@ -367,15 +356,14 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
                         f"Plan validation failed, falling back to sequential: {validation.errors}"
                     )
                     return super().execute_with_tools(user_message, max_iterations)
-                else:
-                    return OrchestratorResult(
-                        success=False,
-                        final_response="",
-                        iterations=0,
-                        tool_calls_made=0,
-                        tool_results=[],
-                        error=f"Plan validation failed: {validation.errors}",
-                    )
+                return OrchestratorResult(
+                    success=False,
+                    final_response="",
+                    iterations=0,
+                    tool_calls_made=0,
+                    tool_results=[],
+                    error=f"Plan validation failed: {validation.errors}",
+                )
 
             execution_result = self.execute_plan(plan, session_db_id)
 
@@ -408,9 +396,7 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
                 try:
                     self.db_manager.update_session(
                         session_db_id,
-                        final_status="completed"
-                        if execution_result.success
-                        else "failed",
+                        final_status="completed" if execution_result.success else "failed",
                         total_duration_ms=int((time.time() - start_time) * 1000),
                         total_iterations=iterations + 1,
                         total_tool_calls=len(plan.steps),
@@ -425,9 +411,7 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
                 tool_calls_made=len(plan.steps),
                 tool_results=[
                     {
-                        "tool_call": {
-                            "function": {"name": s.tool, "arguments": s.parameters}
-                        },
+                        "tool_call": {"function": {"name": s.tool, "arguments": s.parameters}},
                         "result": s.result,
                     }
                     for s in plan.steps
@@ -470,9 +454,7 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
                 error=f"Plan-and-Execute failed: {str(e)}",
             )
 
-    def generate_plan(
-        self, user_message: str, context: Dict[str, Any]
-    ) -> Optional[Plan]:
+    def generate_plan(self, user_message: str, context: dict[str, Any]) -> Plan | None:
         """Generate execution plan from user message.
 
         Args:
@@ -514,9 +496,7 @@ class PlanExecuteOrchestrator(ToolOrchestrator):
             logger.error(f"Plan generation failed: {e}")
             return None
 
-    def _build_planning_prompt(
-        self, user_message: str, tool_descriptions: Dict[str, str]
-    ) -> str:
+    def _build_planning_prompt(self, user_message: str, tool_descriptions: dict[str, str]) -> str:
         """Build planning prompt for LLM.
 
         Args:
@@ -603,7 +583,7 @@ Guidelines:
         except Exception as e:
             return SkillResult(success=False, error=f"LLM request failed: {str(e)}")
 
-    def _parse_plan_response(self, response: str) -> Optional[Dict]:
+    def _parse_plan_response(self, response: str) -> dict | None:
         """Parse plan response from LLM.
 
         Args:
@@ -632,7 +612,7 @@ Guidelines:
             return None
 
     def _create_plan_from_data(
-        self, plan_data: Dict, user_message: str, context: Dict[str, Any]
+        self, plan_data: dict, user_message: str, context: dict[str, Any]
     ) -> Plan:
         """Create Plan object from parsed data.
 
@@ -669,7 +649,7 @@ Guidelines:
 
         return plan
 
-    def _get_tool_descriptions(self) -> Dict[str, str]:
+    def _get_tool_descriptions(self) -> dict[str, str]:
         """Get descriptions of available tools.
 
         Returns:
@@ -733,8 +713,7 @@ Guidelines:
             result.errors.append(f"Circular dependencies detected: {circular_deps}")
 
         result.is_valid = (
-            len(result.errors) == 0
-            or self.config.plan_validation_strictness == "lenient"
+            len(result.errors) == 0 or self.config.plan_validation_strictness == "lenient"
         )
 
         if result.errors and self.config.plan_validation_strictness == "moderate":
@@ -743,7 +722,7 @@ Guidelines:
 
         return result
 
-    def _detect_circular_dependencies(self, plan: Plan) -> List[List[str]]:
+    def _detect_circular_dependencies(self, plan: Plan) -> list[list[str]]:
         """Detect circular dependencies in plan.
 
         Args:
@@ -757,7 +736,7 @@ Guidelines:
         rec_stack = set()
         cycles = []
 
-        def dfs(node: str, path: List[str]):
+        def dfs(node: str, path: list[str]):
             if node in rec_stack:
                 cycle_start = path.index(node)
                 cycles.append(path[cycle_start:] + [node])
@@ -779,7 +758,7 @@ Guidelines:
 
         return cycles
 
-    def _get_required_params(self, tool_name: str) -> List[str]:
+    def _get_required_params(self, tool_name: str) -> list[str]:
         """Get required parameters for a tool.
 
         Args:
@@ -802,9 +781,7 @@ Guidelines:
         except (NotImplementedError, AttributeError):
             return []
 
-    def execute_plan(
-        self, plan: Plan, session_id: Optional[int] = None
-    ) -> PlanExecutionResult:
+    def execute_plan(self, plan: Plan, session_id: int | None = None) -> PlanExecutionResult:
         """Execute validated plan.
 
         Args:
@@ -842,9 +819,7 @@ Guidelines:
 
             total_time_ms = (time.time() - start_time) * 1000
 
-            steps_completed = sum(
-                1 for s in plan.steps if s.status == StepStatus.COMPLETED
-            )
+            steps_completed = sum(1 for s in plan.steps if s.status == StepStatus.COMPLETED)
             steps_failed = sum(1 for s in plan.steps if s.status == StepStatus.FAILED)
             steps_skipped = sum(1 for s in plan.steps if s.status == StepStatus.SKIPPED)
 
@@ -875,7 +850,7 @@ Guidelines:
                 errors=errors,
             )
 
-    def _execute_step(self, step: PlanStep, session_id: Optional[int] = None):
+    def _execute_step(self, step: PlanStep, session_id: int | None = None):
         """Execute a single plan step.
 
         Args:
@@ -975,7 +950,7 @@ Guidelines:
         except Exception:
             return True
 
-    def _find_fallback_step(self, failed_step: PlanStep) -> Optional[PlanStep]:
+    def _find_fallback_step(self, failed_step: PlanStep) -> PlanStep | None:
         """Find fallback step for a failed step.
 
         Args:
@@ -986,7 +961,7 @@ Guidelines:
         """
         return None
 
-    def adapt_plan(self, plan: Plan, execution_context: Dict[str, Any]) -> Plan:
+    def adapt_plan(self, plan: Plan, execution_context: dict[str, Any]) -> Plan:
         """Adapt plan based on execution results.
 
         Args:
@@ -1024,7 +999,7 @@ Guidelines:
 
         return adapted_plan
 
-    def _build_adaptation_prompt(self, plan: Plan, failed_steps: List[PlanStep]) -> str:
+    def _build_adaptation_prompt(self, plan: Plan, failed_steps: list[PlanStep]) -> str:
         """Build adaptation prompt for LLM.
 
         Args:
@@ -1070,7 +1045,7 @@ Be conservative - only suggest essential changes.
 
         return prompt
 
-    def _create_adapted_plan(self, original_plan: Plan, adaptation_data: Dict) -> Plan:
+    def _create_adapted_plan(self, original_plan: Plan, adaptation_data: dict) -> Plan:
         """Create adapted plan from modifications.
 
         Args:
@@ -1117,9 +1092,7 @@ Be conservative - only suggest essential changes.
                     step.action = new_step_data.get("action", step.action)
                     step.tool = new_step_data.get("tool", step.tool)
                     step.parameters.update(new_step_data.get("parameters", {}))
-                    step.dependencies = new_step_data.get(
-                        "dependencies", step.dependencies
-                    )
+                    step.dependencies = new_step_data.get("dependencies", step.dependencies)
 
         return adapted_plan
 
@@ -1138,7 +1111,7 @@ Be conservative - only suggest essential changes.
             if len(self._plan_templates) > 100:
                 self._plan_templates.popitem()
 
-    def _extract_plan_pattern(self, plan: Plan) -> Optional[str]:
+    def _extract_plan_pattern(self, plan: Plan) -> str | None:
         """Extract pattern key from plan.
 
         Args:
@@ -1150,9 +1123,7 @@ Be conservative - only suggest essential changes.
         tool_sequence = "-".join([s.tool for s in plan.steps])
         return f"{tool_sequence}"
 
-    def _generate_final_response(
-        self, plan: Plan, execution_result: Dict[str, Any]
-    ) -> str:
+    def _generate_final_response(self, plan: Plan, execution_result: dict[str, Any]) -> str:
         """Generate final response from plan execution.
 
         Args:
@@ -1165,25 +1136,22 @@ Be conservative - only suggest essential changes.
         if plan.is_complete():
             response = f"Task completed successfully: {plan.goal}\n\n"
 
-            completed_steps = [
-                s for s in plan.steps if s.status == StepStatus.COMPLETED
-            ]
+            completed_steps = [s for s in plan.steps if s.status == StepStatus.COMPLETED]
             if completed_steps:
                 response += f"Executed {len(completed_steps)} steps:\n"
                 for step in completed_steps:
                     response += f"  - {step.action}\n"
 
             return response
-        else:
-            failed_steps = [s for s in plan.steps if s.status == StepStatus.FAILED]
-            error_msg = f"Task failed: {plan.goal}\n\n"
+        failed_steps = [s for s in plan.steps if s.status == StepStatus.FAILED]
+        error_msg = f"Task failed: {plan.goal}\n\n"
 
-            if failed_steps:
-                error_msg += f"Failed steps:\n"
-                for step in failed_steps:
-                    error_msg += f"  - {step.action}: {step.error}\n"
+        if failed_steps:
+            error_msg += "Failed steps:\n"
+            for step in failed_steps:
+                error_msg += f"  - {step.action}: {step.error}\n"
 
-            return error_msg
+        return error_msg
 
     def _store_plan(self, session_id: int, plan: Plan):
         """Store plan in database.
@@ -1229,9 +1197,7 @@ Be conservative - only suggest essential changes.
                 StepStatus.BLOCKED: "⊘",
             }.get(step.status, "?")
 
-            deps_str = (
-                f" (after: {', '.join(step.dependencies)})" if step.dependencies else ""
-            )
+            deps_str = f" (after: {', '.join(step.dependencies)})" if step.dependencies else ""
             lines.append(
                 f"  {status_symbol} [{step.step_id}] {step.action} ({step.tool}){deps_str}"
             )
@@ -1241,7 +1207,7 @@ Be conservative - only suggest essential changes.
 
         return "\n".join(lines)
 
-    def compare_plans(self, plan1: Plan, plan2: Plan) -> Dict[str, Any]:
+    def compare_plans(self, plan1: Plan, plan2: Plan) -> dict[str, Any]:
         """Compare two plans.
 
         Args:

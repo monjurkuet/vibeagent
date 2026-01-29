@@ -8,9 +8,10 @@ to generate comprehensive analytics reports with visualizations.
 
 import logging
 from pathlib import Path
-from core.database_manager import DatabaseManager
-from core.analytics_engine import AnalyticsEngine
+
 from core.analytics_dashboard import AnalyticsDashboard
+from core.analytics_engine import AnalyticsEngine
+from core.database_manager import DatabaseManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -98,9 +99,7 @@ def main():
         if failing_tools:
             print(f"\n  ⚠️  Failing Tools: {len(failing_tools)}")
             for tool in failing_tools[:3]:
-                print(
-                    f"    - {tool.get('tool_name'):20s} {tool.get('failure_rate', 0):6.2f}%"
-                )
+                print(f"    - {tool.get('tool_name'):20s} {tool.get('failure_rate', 0):6.2f}%")
         print()
 
     model_comparison = dashboard.get_model_comparison_panel()
@@ -136,7 +135,7 @@ def main():
         patterns = error_analysis.get("patterns", {})
         error_types = patterns.get("by_error_type", [])
         if error_types:
-            print(f"  Top Error Types:")
+            print("  Top Error Types:")
             for error in error_types[:5]:
                 print(f"    - {error.get('error_type'):30s} {error.get('count', 0):,}")
         print()
@@ -147,46 +146,36 @@ def main():
         print("-" * 40)
         degradation = trends.get("degradation", {})
         if degradation.get("degradation_detected"):
-            print(f"  ⚠️  Performance degradation detected!")
+            print("  ⚠️  Performance degradation detected!")
             for insight in degradation.get("insights", []):
-                print(
-                    f"    - {insight.get('metric')}: {insight.get('trend_percent', 0):.2f}%"
-                )
+                print(f"    - {insight.get('metric')}: {insight.get('trend_percent', 0):.2f}%")
         else:
-            print(f"  ✅ No performance degradation detected")
+            print("  ✅ No performance degradation detected")
 
         success_drop = trends.get("success_rate_drop", {})
         if success_drop.get("drop_detected"):
             print(f"  ⚠️  Success rate drop: {success_drop.get('drop_percent', 0):.2f}%")
         else:
-            print(f"  ✅ Success rate stable")
+            print("  ✅ Success rate stable")
         print()
 
     insights = dashboard.get_insights_panel()
     if "error" not in insights:
         print("💡 INSIGHTS PANEL")
         print("-" * 40)
-        suggestions = insights.get("optimization_suggestions", {}).get(
-            "suggestions", []
-        )
+        suggestions = insights.get("optimization_suggestions", {}).get("suggestions", [])
         if suggestions:
-            print(f"  Top Recommendations:")
+            print("  Top Recommendations:")
             for i, suggestion in enumerate(suggestions[:5], 1):
                 priority = suggestion.get("priority", "low")
-                emoji = (
-                    "🔴"
-                    if priority == "high"
-                    else "🟡"
-                    if priority == "medium"
-                    else "🟢"
-                )
+                emoji = "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
                 print(f"    {emoji} {i}. {suggestion.get('suggestion', '')}")
 
         active_alerts = insights.get("alerts", [])
         if active_alerts:
             print(f"\n  🚨 Active Alerts: {len(active_alerts)}")
         else:
-            print(f"\n  ✅ No active alerts")
+            print("\n  ✅ No active alerts")
         print()
 
     parallel_stats = dashboard.get_parallel_execution_stats()
@@ -251,9 +240,7 @@ def main():
     print("=" * 60 + "\n")
 
     dashboard.configure_alert("success_rate", threshold=80.0, operator="less_than")
-    dashboard.configure_alert(
-        "avg_duration_ms", threshold=10000.0, operator="greater_than"
-    )
+    dashboard.configure_alert("avg_duration_ms", threshold=10000.0, operator="greater_than")
     print("  ✅ Alerts configured:")
     print("    - Success rate < 80%")
     print("    - Avg duration > 10000ms")
@@ -265,7 +252,7 @@ def main():
         for alert in triggered_alerts:
             print(f"    - [{alert.severity.upper()}] {alert.message}")
     else:
-        print(f"\n  ✅ No alerts triggered")
+        print("\n  ✅ No alerts triggered")
 
     print("\n" + "=" * 60)
     print("GENERATING FORECAST")
@@ -277,7 +264,7 @@ def main():
         print(f"  Metric:               {forecast.get('metric')}")
         print(f"  Trend:                {forecast.get('trend', 0):.2f}")
         print(f"  Confidence:           {forecast.get('confidence')}")
-        print(f"\n  7-Day Forecast:")
+        print("\n  7-Day Forecast:")
         for day in forecast.get("forecast", []):
             print(f"    - {day.get('date')}: {day.get('forecast_value', 0):.2f}%")
 

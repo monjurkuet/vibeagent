@@ -1,13 +1,13 @@
 """Example demonstrating ContextManager integration with ToolOrchestrator."""
 
 import logging
+
 from core.context_manager import (
+    CompressionStrategy,
+    ContextConfig,
     ContextManager,
     ContextType,
-    ContextConfig,
-    CompressionStrategy,
 )
-from core.tool_orchestrator import ToolOrchestrator
 from core.database_manager import DatabaseManager
 
 logging.basicConfig(level=logging.INFO)
@@ -113,9 +113,7 @@ def create_sample_conversation():
 
     for i in range(20):
         messages.append({"role": "user", "content": f"Additional question {i}"})
-        messages.append(
-            {"role": "assistant", "content": f"Response to additional question {i}"}
-        )
+        messages.append({"role": "assistant", "content": f"Response to additional question {i}"})
 
     return messages
 
@@ -180,9 +178,7 @@ def example_summarization():
     logger.info(f"Original tokens: {original_tokens}")
 
     summary = context_manager.summarize_messages(messages)
-    logger.info(
-        f"Summary tokens: {context_manager.estimate_tokens(summary.summary_text)}"
-    )
+    logger.info(f"Summary tokens: {context_manager.estimate_tokens(summary.summary_text)}")
     logger.info(f"Token reduction: {summary.token_reduction:.1%}")
     logger.info(f"Key points: {len(summary.key_points)}")
     logger.info(f"Summary:\n{summary.summary_text}")

@@ -1,15 +1,14 @@
 """Tests for Plan-and-Execute orchestrator."""
 
-import pytest
 import json
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 from core.plan_execute_orchestrator import (
+    Plan,
     PlanExecuteOrchestrator,
     PlanExecuteOrchestratorConfig,
-    Plan,
     PlanStep,
-    PlanValidationResult,
-    PlanExecutionResult,
     StepStatus,
     StepType,
 )
@@ -568,9 +567,7 @@ class TestPlanExecuteOrchestrator:
             with patch.object(
                 orchestrator.__class__.__bases__[0], "execute_with_tools"
             ) as mock_super:
-                mock_super.return_value = MagicMock(
-                    success=True, final_response="Fallback"
-                )
+                mock_super.return_value = MagicMock(success=True, final_response="Fallback")
 
                 result = orchestrator.execute_with_tools("Test task")
 

@@ -1,9 +1,9 @@
 """Tests for model configuration system."""
 
-import unittest
-import tempfile
 import shutil
 import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -11,20 +11,18 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from config.model_configs import (
     ExecutionPhase,
     ModelCapability,
-    PhaseSettings,
-    RetryPolicy,
-    PromptTemplate,
     ModelConfig,
+    ModelConfigOptimizer,
     ModelConfigRegistry,
     ModelConfigStorage,
-    ModelConfigOptimizer,
+    PhaseSettings,
+    create_ab_test_config,
+    detect_model_capabilities,
+    get_llm_params_for_phase,
+    get_max_tokens_for_phase,
     get_model_config,
     get_temperature_for_phase,
-    get_max_tokens_for_phase,
-    detect_model_capabilities,
     validate_config,
-    create_ab_test_config,
-    get_llm_params_for_phase,
 )
 
 
@@ -277,9 +275,7 @@ class TestABTesting(unittest.TestCase):
         variant = create_ab_test_config(
             base_config,
             variant_name="test-variant",
-            changes={
-                "phase_settings": {ExecutionPhase.PLANNING.value: {"temperature": 0.1}}
-            },
+            changes={"phase_settings": {ExecutionPhase.PLANNING.value: {"temperature": 0.1}}},
         )
 
         self.assertEqual(variant.model_name, "gpt-4-test-variant")

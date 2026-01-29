@@ -2,10 +2,10 @@
 
 import pytest
 from core.context_manager import (
+    CompressionStrategy,
+    ContextConfig,
     ContextManager,
     ContextType,
-    ContextConfig,
-    CompressionStrategy,
     MessageScore,
 )
 
@@ -227,9 +227,7 @@ class TestContextManager:
 
         assert isinstance(essential, list)
         assert len(essential) <= len(sample_messages)
-        assert all(
-            msg.get("role") in ["user", "assistant", "tool"] for msg in essential
-        )
+        assert all(msg.get("role") in ["user", "assistant", "tool"] for msg in essential)
 
     def test_merge_similar_messages(self, context_manager):
         """Test merging similar messages."""
@@ -351,9 +349,7 @@ class TestIntegration:
         long_messages = []
         for i in range(50):
             long_messages.append({"role": "user", "content": f"Message {i}"})
-            long_messages.append(
-                {"role": "assistant", "content": f"Response to message {i}"}
-            )
+            long_messages.append({"role": "assistant", "content": f"Response to message {i}"})
 
         result = context_manager.manage_context(long_messages, max_tokens=1000)
         assert context_manager.get_token_usage(result) <= 1000

@@ -4,10 +4,10 @@ import json
 import logging
 import re
 import time
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 from .skill import SkillResult
 
@@ -60,14 +60,14 @@ class CorrectionStrategy:
 
     strategy_type: CorrectionType
     description: str
-    tool_name: Optional[str] = None
-    new_parameters: Optional[Dict] = None
-    new_tool: Optional[str] = None
-    delay_ms: Optional[int] = None
+    tool_name: str | None = None
+    new_parameters: dict | None = None
+    new_tool: str | None = None
+    delay_ms: int | None = None
     confidence_score: float = 0.0
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert strategy to dictionary."""
         return {
             "strategy_type": self.strategy_type.value,
@@ -88,16 +88,16 @@ class CorrectionAttempt:
     attempt_number: int
     trigger: CorrectionTrigger
     strategy: CorrectionStrategy
-    original_error: Optional[str] = None
+    original_error: str | None = None
     success: bool = False
     execution_time_ms: int = 0
     timestamp: datetime = field(default_factory=datetime.now)
-    reflection_summary: Optional[str] = None
-    result_before: Optional[Dict] = None
-    result_after: Optional[Dict] = None
-    metadata: Dict = field(default_factory=dict)
+    reflection_summary: str | None = None
+    result_before: dict | None = None
+    result_after: dict | None = None
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert attempt to dictionary."""
         return {
             "attempt_number": self.attempt_number,
@@ -124,7 +124,7 @@ class ConfidenceMetrics:
     success_rate: float = 0.0
     last_updated: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert metrics to dictionary."""
         return {
             "current_confidence": self.current_confidence,
@@ -152,7 +152,7 @@ class SelfCorrectorConfig:
     reflection_depth: int = 3
     auto_apply_confidence: float = 0.7
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert config to dictionary."""
         return {
             "max_correction_attempts": self.max_correction_attempts,
@@ -237,9 +237,9 @@ class SelfCorrector:
         self.db_manager = db_manager
         self.config = config or SelfCorrectorConfig()
 
-        self._correction_attempts: List[CorrectionAttempt] = []
-        self._error_history: Dict[str, List[Dict]] = {}
-        self._pattern_success_cache: Dict[str, float] = {}
+        self._correction_attempts: list[CorrectionAttempt] = []
+        self._error_history: dict[str, list[dict]] = {}
+        self._pattern_success_cache: dict[str, float] = {}
         self._confidence_metrics = ConfidenceMetrics()
         self._iteration_count = 0
         self._last_success_iteration = 0
@@ -247,8 +247,8 @@ class SelfCorrector:
 
     def should_self_correct(
         self,
-        context: Dict,
-    ) -> Tuple[bool, Optional[CorrectionTrigger]]:
+        context: dict,
+    ) -> tuple[bool, CorrectionTrigger | None]:
         """Determine if self-correction is needed.
 
         Args:
@@ -292,7 +292,7 @@ class SelfCorrector:
 
         return False, None
 
-    def _is_unexpected_result(self, result: Dict, context: Dict) -> bool:
+    def _is_unexpected_result(self, result: dict, context: dict) -> bool:
         """Check if result is unexpected.
 
         Args:
@@ -322,7 +322,7 @@ class SelfCorrector:
 
         return False
 
-    def reflect_on_failure(self, error: str, context: Dict) -> Dict[str, Any]:
+    def reflect_on_failure(self, error: str, context: dict) -> dict[str, Any]:
         """Analyze failure and generate reflection summary.
 
         Args:
@@ -357,7 +357,7 @@ class SelfCorrector:
 
         return reflection
 
-    def reflect_on_result(self, result: SkillResult, context: Dict) -> Dict[str, Any]:
+    def reflect_on_result(self, result: SkillResult, context: dict) -> dict[str, Any]:
         """Evaluate results and generate reflection.
 
         Args:
@@ -382,9 +382,7 @@ class SelfCorrector:
                 self._confidence_metrics.current_confidence * 1.1, 1.0
             )
         else:
-            self._confidence_metrics.success_rate = (
-                self._confidence_metrics.success_rate * 0.9
-            )
+            self._confidence_metrics.success_rate = self._confidence_metrics.success_rate * 0.9
             self._confidence_metrics.current_confidence = max(
                 self._confidence_metrics.current_confidence * 0.9, 0.0
             )
@@ -393,7 +391,7 @@ class SelfCorrector:
 
         return reflection
 
-    def _analyze_context(self, context: Dict) -> Dict:
+    def _analyze_context(self, context: dict) -> dict:
         """Analyze execution context.
 
         Args:
@@ -415,7 +413,7 @@ class SelfCorrector:
 
         return analysis
 
-    def _identify_root_causes(self, error: str, context: Dict) -> List[str]:
+    def _identify_root_causes(self, error: str, context: dict) -> list[str]:
         """Identify potential root causes of error.
 
         Args:
@@ -502,7 +500,7 @@ class SelfCorrector:
 
         return root_causes
 
-    def _get_llm_reflection(self, error: str, context: Dict) -> Optional[Dict]:
+    def _get_llm_reflection(self, error: str, context: dict) -> dict | None:
         """Get reflection from LLM.
 
         Args:
@@ -541,7 +539,7 @@ Format as JSON with keys: root_cause, suggestions, alternatives."""
 
         return None
 
-    def _evaluate_result_quality(self, result: SkillResult, context: Dict) -> float:
+    def _evaluate_result_quality(self, result: SkillResult, context: dict) -> float:
         """Evaluate quality of result.
 
         Args:
@@ -565,7 +563,7 @@ Format as JSON with keys: root_cause, suggestions, alternatives."""
 
         return min(quality, 1.0)
 
-    def generate_alternatives(self, context: Dict) -> List[CorrectionStrategy]:
+    def generate_alternatives(self, context: dict) -> list[CorrectionStrategy]:
         """Generate alternative correction strategies.
 
         Args:
@@ -645,7 +643,7 @@ Format as JSON with keys: root_cause, suggestions, alternatives."""
 
         return strategies
 
-    def _suggest_parameter_fixes(self, parameters: Dict, error: str) -> Dict:
+    def _suggest_parameter_fixes(self, parameters: dict, error: str) -> dict:
         """Suggest fixes for invalid parameters.
 
         Args:
@@ -671,7 +669,7 @@ Format as JSON with keys: root_cause, suggestions, alternatives."""
 
         return fixes
 
-    def _get_llm_strategies(self, context: Dict) -> List[CorrectionStrategy]:
+    def _get_llm_strategies(self, context: dict) -> list[CorrectionStrategy]:
         """Get alternative strategies from LLM.
 
         Args:
@@ -706,9 +704,7 @@ Format as JSON array."""
                     for s in suggestions:
                         strategies.append(
                             CorrectionStrategy(
-                                strategy_type=CorrectionType(
-                                    s.get("type", "fallback_strategy")
-                                ),
+                                strategy_type=CorrectionType(s.get("type", "fallback_strategy")),
                                 description=s.get("description", ""),
                                 confidence_score=s.get("confidence_score", 0.5),
                                 metadata={"from_llm": True},
@@ -724,8 +720,8 @@ Format as JSON array."""
         return []
 
     def _score_and_rank_strategies(
-        self, strategies: List[CorrectionStrategy], context: Dict
-    ) -> List[CorrectionStrategy]:
+        self, strategies: list[CorrectionStrategy], context: dict
+    ) -> list[CorrectionStrategy]:
         """Score and rank strategies by likelihood of success.
 
         Args:
@@ -742,7 +738,7 @@ Format as JSON array."""
 
         return strategies
 
-    def score_strategy(self, strategy: CorrectionStrategy, context: Dict) -> float:
+    def score_strategy(self, strategy: CorrectionStrategy, context: dict) -> float:
         """Score strategy by likelihood of success.
 
         Args:
@@ -778,8 +774,8 @@ Format as JSON array."""
         return min(score, 1.0)
 
     def select_best_strategy(
-        self, strategies: List[CorrectionStrategy]
-    ) -> Optional[CorrectionStrategy]:
+        self, strategies: list[CorrectionStrategy]
+    ) -> CorrectionStrategy | None:
         """Select best strategy from alternatives.
 
         Args:
@@ -800,9 +796,7 @@ Format as JSON array."""
 
         return best
 
-    def apply_correction(
-        self, correction: CorrectionStrategy, context: Dict
-    ) -> SkillResult:
+    def apply_correction(self, correction: CorrectionStrategy, context: dict) -> SkillResult:
         """Apply chosen correction.
 
         Args:
@@ -880,9 +874,7 @@ Format as JSON array."""
 
         return result
 
-    def _apply_different_tool(
-        self, correction: CorrectionStrategy, context: Dict
-    ) -> SkillResult:
+    def _apply_different_tool(self, correction: CorrectionStrategy, context: dict) -> SkillResult:
         """Apply different tool correction.
 
         Args:
@@ -904,7 +896,7 @@ Format as JSON array."""
         )
 
     def _apply_modified_parameters(
-        self, correction: CorrectionStrategy, context: Dict
+        self, correction: CorrectionStrategy, context: dict
     ) -> SkillResult:
         """Apply modified parameters correction.
 
@@ -923,7 +915,7 @@ Format as JSON array."""
             data={"message": "Parameters modified", "new_parameters": new_parameters},
         )
 
-    def _apply_different_order(self, context: Dict) -> SkillResult:
+    def _apply_different_order(self, context: dict) -> SkillResult:
         """Apply different order correction.
 
         Args:
@@ -937,7 +929,7 @@ Format as JSON array."""
             data={"message": "Operation order changed"},
         )
 
-    def _apply_ask_user(self, context: Dict) -> SkillResult:
+    def _apply_ask_user(self, context: dict) -> SkillResult:
         """Apply ask user correction.
 
         Args:
@@ -951,9 +943,7 @@ Format as JSON array."""
             data={"message": "User guidance requested"},
         )
 
-    def _apply_retry_with_delay(
-        self, correction: CorrectionStrategy, context: Dict
-    ) -> SkillResult:
+    def _apply_retry_with_delay(self, correction: CorrectionStrategy, context: dict) -> SkillResult:
         """Apply retry with delay correction.
 
         Args:
@@ -972,7 +962,7 @@ Format as JSON array."""
         )
 
     def _apply_fallback_strategy(
-        self, correction: CorrectionStrategy, context: Dict
+        self, correction: CorrectionStrategy, context: dict
     ) -> SkillResult:
         """Apply fallback strategy correction.
 
@@ -988,7 +978,7 @@ Format as JSON array."""
             data={"message": f"Applied fallback: {correction.description}"},
         )
 
-    def _learn_from_correction(self, attempt: CorrectionAttempt, context: Dict):
+    def _learn_from_correction(self, attempt: CorrectionAttempt, context: dict):
         """Learn from correction attempt.
 
         Args:
@@ -1015,7 +1005,7 @@ Format as JSON array."""
             0.0, min(1.0, self._pattern_success_cache[pattern_key])
         )
 
-    def _track_correction(self, attempt: CorrectionAttempt, context: Dict):
+    def _track_correction(self, attempt: CorrectionAttempt, context: dict):
         """Track correction in database.
 
         Args:
@@ -1045,7 +1035,7 @@ Format as JSON array."""
         except Exception as e:
             logger.error(f"Failed to track correction: {e}")
 
-    def get_error_pattern(self, error: Optional[str]) -> ErrorPattern:
+    def get_error_pattern(self, error: str | None) -> ErrorPattern:
         """Identify error pattern from error message.
 
         Args:
@@ -1066,7 +1056,7 @@ Format as JSON array."""
 
         return ErrorPattern.UNKNOWN
 
-    def get_similar_past_solutions(self, error: str) -> List[Dict]:
+    def get_similar_past_solutions(self, error: str) -> list[dict]:
         """Find similar past solutions from history.
 
         Args:
@@ -1092,7 +1082,7 @@ Format as JSON array."""
 
         return solutions
 
-    def calculate_confidence(self, context: Dict) -> float:
+    def calculate_confidence(self, context: dict) -> float:
         """Calculate confidence in current approach.
 
         Args:
@@ -1117,14 +1107,14 @@ Format as JSON array."""
         if tool_name:
             tool_errors = self._error_history.get(tool_name, [])
             if tool_errors:
-                error_rate = len(
-                    [e for e in tool_errors if not e.get("success", True)]
-                ) / len(tool_errors)
+                error_rate = len([e for e in tool_errors if not e.get("success", True)]) / len(
+                    tool_errors
+                )
                 base_confidence *= max(0.3, 1.0 - error_rate)
 
         return max(0.0, min(1.0, base_confidence))
 
-    def get_correction_statistics(self) -> Dict:
+    def get_correction_statistics(self) -> dict:
         """Get statistics about correction attempts.
 
         Returns:
@@ -1142,12 +1132,8 @@ Format as JSON array."""
 
         stats = {
             "total_attempts": len(self._correction_attempts),
-            "successful_corrections": sum(
-                1 for a in self._correction_attempts if a.success
-            ),
-            "failed_corrections": sum(
-                1 for a in self._correction_attempts if not a.success
-            ),
+            "successful_corrections": sum(1 for a in self._correction_attempts if a.success),
+            "failed_corrections": sum(1 for a in self._correction_attempts if not a.success),
             "by_trigger": {},
             "by_strategy": {},
         }

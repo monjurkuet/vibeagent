@@ -31,19 +31,19 @@ Nine examples across five categories:
 
 1. **Simple** (1 example)
    - Single tool call with basic parameters
-   
+
 2. **Chaining** (1 example)
    - Multiple tool calls with data flow
    - Search → Extract → Store pattern
-   
+
 3. **Error Recovery** (2 examples)
    - Handle missing required parameters
    - Fix invalid JSON format
-   
+
 4. **Parallel** (2 examples)
    - Independent parallel searches
    - Multi-source data collection
-   
+
 5. **Complex** (3 examples)
    - Multi-step research workflow
    - Context-dependent analysis
@@ -134,7 +134,7 @@ class EnhancedToolOrchestrator(ToolOrchestrator):
     def execute_with_tools(self, user_message: str, max_iterations: int = 10):
         # Build ReAct prompt with examples
         messages = [{"role": "user", "content": user_message}]
-        
+
         react_prompt = build_react_prompt(
             messages=messages,
             tools=self._tool_schemas,
@@ -142,7 +142,7 @@ class EnhancedToolOrchestrator(ToolOrchestrator):
             include_examples=True,
             example_categories=["simple", "chaining", "error_recovery"]
         )
-        
+
         # Execute with enhanced prompt
         return self._execute_with_react_prompt(react_prompt, max_iterations)
 ```

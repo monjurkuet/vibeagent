@@ -18,14 +18,11 @@ import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Tuple
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -34,9 +31,7 @@ class MigrationManager:
 
     MIGRATION_PATTERN = re.compile(r"^(\d{14})_(.+)\.sql$")
 
-    def __init__(
-        self, db_path: Optional[str] = None, migrations_dir: Optional[str] = None
-    ):
+    def __init__(self, db_path: str | None = None, migrations_dir: str | None = None):
         """Initialize the migration manager."""
         if db_path is None:
             db_path = "/home/muham/development/vibeagent/data/vibeagent.db"
@@ -55,7 +50,8 @@ class MigrationManager:
             return
 
         with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     version TEXT PRIMARY KEY,
                     name TEXT NOT NULL,
@@ -63,10 +59,11 @@ class MigrationManager:
                     rollback_sql TEXT,
                     checksum TEXT
                 )
-            """)
+            """
+            )
             conn.commit()
 
-    def list_migrations(self) -> List[Dict]:
+    def list_migrations(self) -> list[dict]:
         """List all available migrations with their status."""
         migrations = self._discover_migrations()
         applied = self._get_applied_migrations()
@@ -88,7 +85,7 @@ class MigrationManager:
 
         return sorted(result, key=lambda x: x["version"])
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get the current migration status."""
         migrations = self.list_migrations()
         applied_count = sum(1 for m in migrations if m["status"] == "applied")
@@ -108,7 +105,7 @@ class MigrationManager:
             "migrations": migrations,
         }
 
-    def migrate(self, target_version: Optional[str] = None) -> bool:
+    def migrate(self, target_version: str | None = None) -> bool:
         """Apply pending migrations up to target version."""
         try:
             migrations = self._discover_migrations()
@@ -142,7 +139,7 @@ class MigrationManager:
             logger.error(f"Migration failed: {e}")
             return False
 
-    def rollback(self, steps: int = 1, version: Optional[str] = None) -> bool:
+    def rollback(self, steps: int = 1, version: str | None = None) -> bool:
         """Rollback migrations by steps or to a specific version."""
         try:
             applied = self._get_applied_migrations()
@@ -180,7 +177,7 @@ class MigrationManager:
             logger.error(f"Rollback failed: {e}")
             return False
 
-    def validate_migrations(self) -> Tuple[List[str], List[str]]:
+    def validate_migrations(self) -> tuple[list[str], list[str]]:
         """Validate all migration files."""
         migrations = self._discover_migrations()
         applied = self._get_applied_migrations()
@@ -200,7 +197,7 @@ class MigrationManager:
 
         return valid, invalid
 
-    def create_migration(self, name: str) -> Optional[str]:
+    def create_migration(self, name: str) -> str | None:
         """Create a new migration file with the current timestamp."""
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         filename = f"{timestamp}_{name.replace(' ', '_').lower()}.sql"
@@ -227,14 +224,12 @@ class MigrationManager:
         logger.info(f"Created migration file: {filepath}")
         return str(filepath)
 
-    def _discover_migrations(self) -> List[Tuple[str, str, Path]]:
+    def _discover_migrations(self) -> list[tuple[str, str, Path]]:
         """Discover all migration files in the migrations directory."""
         migrations = []
 
         if not self.migrations_dir.exists():
-            logger.warning(
-                f"Migrations directory does not exist: {self.migrations_dir}"
-            )
+            logger.warning(f"Migrations directory does not exist: {self.migrations_dir}")
             return migrations
 
         for filepath in sorted(self.migrations_dir.glob("*.sql")):
@@ -246,7 +241,7 @@ class MigrationManager:
 
         return sorted(migrations, key=lambda x: x[0])
 
-    def _get_applied_migrations(self) -> Dict[str, Dict]:
+    def _get_applied_migrations(self) -> dict[str, dict]:
         """Get all applied migrations from the database."""
         applied = {}
 
@@ -271,7 +266,7 @@ class MigrationManager:
         """Apply a single migration."""
         logger.info(f"Applying migration: {version}_{name}")
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             migration_sql = f.read()
 
         up_sql, rollback_sql = self._extract_migration_sql(migration_sql)
@@ -306,7 +301,7 @@ class MigrationManager:
                     logger.info(f"✓ Applied migration: {version}_{name}")
                     return True
 
-                except Exception as e:
+                except Exception:
                     conn.rollback()
                     raise
 
@@ -314,7 +309,7 @@ class MigrationManager:
             logger.error(f"Failed to apply migration {version}_{name}: {e}")
             return False
 
-    def _rollback_migration(self, version: str, info: Dict) -> bool:
+    def _rollback_migration(self, version: str, info: dict) -> bool:
         """Rollback a single migration."""
         logger.info(f"Rolling back migration: {version}_{info['name']}")
 
@@ -331,15 +326,13 @@ class MigrationManager:
                 try:
                     conn.executescript(rollback_sql)
 
-                    conn.execute(
-                        "DELETE FROM schema_migrations WHERE version = ?", (version,)
-                    )
+                    conn.execute("DELETE FROM schema_migrations WHERE version = ?", (version,))
 
                     conn.commit()
                     logger.info(f"✓ Rolled back migration: {version}")
                     return True
 
-                except Exception as e:
+                except Exception:
                     conn.rollback()
                     raise
 
@@ -347,7 +340,7 @@ class MigrationManager:
             logger.error(f"Failed to rollback migration {version}: {e}")
             return False
 
-    def _extract_migration_sql(self, content: str) -> Tuple[str, str]:
+    def _extract_migration_sql(self, content: str) -> tuple[str, str]:
         """Extract UP and ROLLBACK SQL from migration file."""
         rollback_marker = "\n-- ROLLBACK:"
 
@@ -367,13 +360,11 @@ class MigrationManager:
 
         return hashlib.md5(content.encode()).hexdigest()
 
-    def _validate_migration_file(
-        self, filepath: Path, version: str, name: str
-    ) -> List[str]:
+    def _validate_migration_file(self, filepath: Path, version: str, name: str) -> list[str]:
         """Validate a migration file."""
         issues = []
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             content = f.read()
 
         up_sql, rollback_sql = self._extract_migration_sql(content)
@@ -389,19 +380,13 @@ class MigrationManager:
 
 def main():
     """Main entry point for the script."""
-    parser = argparse.ArgumentParser(
-        description="Manage database migrations for VibeAgent"
-    )
+    parser = argparse.ArgumentParser(description="Manage database migrations for VibeAgent")
 
     subparsers = parser.add_subparsers(dest="command", help="Migration commands")
 
     parser.add_argument("--db-path", type=str, help="Path to the database file")
-    parser.add_argument(
-        "--migrations-dir", type=str, help="Path to the migrations directory"
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("--migrations-dir", type=str, help="Path to the migrations directory")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
 
     migrate_cmd = subparsers.add_parser("migrate", help="Apply pending migrations")
     migrate_cmd.add_argument(
@@ -415,9 +400,7 @@ def main():
         default=1,
         help="Number of migrations to rollback (default: 1)",
     )
-    rollback_cmd.add_argument(
-        "--to", type=str, dest="to_version", help="Rollback to this version"
-    )
+    rollback_cmd.add_argument("--to", type=str, dest="to_version", help="Rollback to this version")
 
     subparsers.add_parser("status", help="Show migration status")
     subparsers.add_parser("list", help="List all migrations")
@@ -440,14 +423,14 @@ def main():
 
     if args.command == "status":
         status = manager.get_status()
-        print(f"\nMigration Status:")
+        print("\nMigration Status:")
         print(f"  Total: {status['total_migrations']}")
         print(f"  Applied: {status['applied_count']}")
         print(f"  Pending: {status['pending_count']}")
         print(f"  Latest: {status['latest_applied'] or 'None'}")
 
         if status["migrations"]:
-            print(f"\nMigrations:")
+            print("\nMigrations:")
             for m in status["migrations"]:
                 status_symbol = "✓" if m["status"] == "applied" else "○"
                 print(f"  {status_symbol} {m['version']} - {m['name']}")
@@ -479,17 +462,17 @@ def main():
     elif args.command == "validate":
         valid, invalid = manager.validate_migrations()
 
-        print(f"\nValidation Results:")
+        print("\nValidation Results:")
         print(f"  Valid: {len(valid)}")
         print(f"  Invalid: {len(invalid)}")
 
         if invalid:
-            print(f"\nInvalid migrations:")
+            print("\nInvalid migrations:")
             for m in invalid:
                 print(f"  ✗ {m}")
 
         if valid:
-            print(f"\nValid migrations:")
+            print("\nValid migrations:")
             for m in valid:
                 print(f"  ✓ {m}")
 
@@ -501,7 +484,7 @@ def main():
             print(f"\n✓ Created migration: {filepath}")
             sys.exit(0)
         else:
-            print(f"\n✗ Failed to create migration")
+            print("\n✗ Failed to create migration")
             sys.exit(1)
 
 

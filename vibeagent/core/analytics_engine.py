@@ -1,9 +1,8 @@
 import json
 import logging
-from typing import Optional, Dict, List, Any
-from datetime import datetime, timedelta
+from datetime import datetime
 from statistics import mean, median, stdev
-from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +18,7 @@ class AnalyticsEngine:
         """
         self.db = db_manager
 
-    def get_success_rate_trend(self, days: int = 30) -> Dict[str, Any]:
+    def get_success_rate_trend(self, days: int = 30) -> dict[str, Any]:
         """Get success rate trend over time.
 
         Args:
@@ -33,11 +32,11 @@ class AnalyticsEngine:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         DATE(s.created_at) as date,
                         COUNT(*) as total_sessions,
                         COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions s
                     WHERE s.created_at >= datetime('now', '-' || ? || ' days')
@@ -62,7 +61,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting success rate trend: {e}")
             return {"error": str(e), "data": []}
 
-    def get_tool_performance(self, tool_name: str) -> Dict[str, Any]:
+    def get_tool_performance(self, tool_name: str) -> dict[str, Any]:
         """Get performance metrics for a specific tool.
 
         Args:
@@ -76,11 +75,11 @@ class AnalyticsEngine:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         tool_name,
                         COUNT(*) as total_calls,
                         COUNT(CASE WHEN success = 1 THEN 1 END) as successful_calls,
-                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                         AVG(execution_time_ms) as avg_execution_time_ms,
                         MIN(execution_time_ms) as min_execution_time_ms,
@@ -121,7 +120,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting tool performance: {e}")
             return {"error": str(e), "tool_name": tool_name}
 
-    def get_model_comparison(self) -> List[Dict[str, Any]]:
+    def get_model_comparison(self) -> list[dict[str, Any]]:
         """Compare performance across different models.
 
         Returns:
@@ -133,7 +132,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting model comparison: {e}")
             return []
 
-    def get_execution_time_distribution(self) -> Dict[str, Any]:
+    def get_execution_time_distribution(self) -> dict[str, Any]:
         """Analyze distribution of execution times.
 
         Returns:
@@ -175,7 +174,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting execution time distribution: {e}")
             return {"error": str(e)}
 
-    def get_iteration_statistics(self) -> Dict[str, Any]:
+    def get_iteration_statistics(self) -> dict[str, Any]:
         """Analyze iteration count statistics.
 
         Returns:
@@ -214,7 +213,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting iteration statistics: {e}")
             return {"error": str(e)}
 
-    def find_failing_tools(self, threshold: float = 50.0) -> List[Dict[str, Any]]:
+    def find_failing_tools(self, threshold: float = 50.0) -> list[dict[str, Any]]:
         """Find tools with high failure rates.
 
         Args:
@@ -228,13 +227,13 @@ class AnalyticsEngine:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         tool_name,
                         COUNT(*) as total_calls,
                         COUNT(CASE WHEN success = 1 THEN 1 END) as successful_calls,
-                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
-                        ROUND(100 - CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(100 - CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as failure_rate
                     FROM tool_calls
                     GROUP BY tool_name
@@ -248,7 +247,7 @@ class AnalyticsEngine:
             logger.error(f"Error finding failing tools: {e}")
             return []
 
-    def find_successful_patterns(self) -> Dict[str, Any]:
+    def find_successful_patterns(self) -> dict[str, Any]:
         """Identify patterns that lead to successful outcomes.
 
         Returns:
@@ -262,10 +261,10 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT s.model, 
+                    SELECT s.model,
                            COUNT(*) as total,
                            COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) as successful,
-                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT) 
+                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT)
                                  / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions s
                     WHERE s.final_status IS NOT NULL
@@ -280,7 +279,7 @@ class AnalyticsEngine:
                     SELECT s.orchestrator_type,
                            COUNT(*) as total,
                            COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) as successful,
-                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT) 
+                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT)
                                  / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions s
                     WHERE s.final_status IS NOT NULL AND s.orchestrator_type IS NOT NULL
@@ -295,7 +294,7 @@ class AnalyticsEngine:
                     SELECT s.session_type,
                            COUNT(*) as total,
                            COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) as successful,
-                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT) 
+                           ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT)
                                  / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions s
                     WHERE s.final_status IS NOT NULL
@@ -310,7 +309,7 @@ class AnalyticsEngine:
             logger.error(f"Error finding successful patterns: {e}")
             return {"error": str(e)}
 
-    def find_error_patterns(self) -> Dict[str, Any]:
+    def find_error_patterns(self) -> dict[str, Any]:
         """Identify common error patterns.
 
         Returns:
@@ -348,10 +347,10 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT error_type, recovery_strategy, 
+                    SELECT error_type, recovery_strategy,
                            COUNT(*) as total_attempts,
                            COUNT(CASE WHEN success = 1 THEN 1 END) as successful_recoveries,
-                           ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                           ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                                  / NULLIF(COUNT(*), 0) * 100, 2) as recovery_success_rate
                     FROM error_recovery
                     GROUP BY error_type, recovery_strategy
@@ -359,16 +358,14 @@ class AnalyticsEngine:
                     LIMIT 20
                     """
                 )
-                patterns["recovery_strategies"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                patterns["recovery_strategies"] = [dict(row) for row in cursor.fetchall()]
 
             return patterns
         except Exception as e:
             logger.error(f"Error finding error patterns: {e}")
             return {"error": str(e)}
 
-    def find_optimal_parameters(self) -> Dict[str, Any]:
+    def find_optimal_parameters(self) -> dict[str, Any]:
         """Find best parameter combinations.
 
         Returns:
@@ -385,7 +382,7 @@ class AnalyticsEngine:
                     SELECT m.temperature,
                            COUNT(*) as total,
                            AVG(lr.response_time_ms) as avg_response_time_ms,
-                           ROUND(CAST(SUM(lr.completion_tokens) AS FLOAT) 
+                           ROUND(CAST(SUM(lr.completion_tokens) AS FLOAT)
                                  / NULLIF(SUM(lr.prompt_tokens), 0), 2) as avg_token_efficiency
                     FROM messages m
                     JOIN llm_responses lr ON m.id = lr.message_id
@@ -401,7 +398,7 @@ class AnalyticsEngine:
                     SELECT m.max_tokens,
                            COUNT(*) as total,
                            COUNT(CASE WHEN lr.finish_reason = 'stop' THEN 1 END) as completed,
-                           ROUND(CAST(COUNT(CASE WHEN lr.finish_reason = 'stop' THEN 1 END) AS FLOAT) 
+                           ROUND(CAST(COUNT(CASE WHEN lr.finish_reason = 'stop' THEN 1 END) AS FLOAT)
                                  / NULLIF(COUNT(*), 0) * 100, 2) as completion_rate
                     FROM messages m
                     JOIN llm_responses lr ON m.id = lr.message_id
@@ -417,23 +414,21 @@ class AnalyticsEngine:
                     SELECT lr.model,
                            AVG(lr.response_time_ms) as avg_response_time_ms,
                            AVG(lr.total_tokens) as avg_total_tokens,
-                           ROUND(CAST(SUM(lr.completion_tokens) AS FLOAT) 
+                           ROUND(CAST(SUM(lr.completion_tokens) AS FLOAT)
                                  / NULLIF(SUM(lr.prompt_tokens), 0), 2) as avg_token_efficiency
                     FROM llm_responses lr
                     GROUP BY lr.model
                     ORDER BY avg_token_efficiency DESC
                     """
                 )
-                insights["by_model_efficiency"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                insights["by_model_efficiency"] = [dict(row) for row in cursor.fetchall()]
 
             return insights
         except Exception as e:
             logger.error(f"Error finding optimal parameters: {e}")
             return {"error": str(e)}
 
-    def detect_performance_degradation(self, days: int = 7) -> Dict[str, Any]:
+    def detect_performance_degradation(self, days: int = 7) -> dict[str, Any]:
         """Detect performance degradation over time.
 
         Args:
@@ -448,7 +443,7 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         DATE(s.created_at) as date,
                         AVG(s.total_duration_ms) as avg_duration_ms,
                         AVG(s.total_iterations) as avg_iterations
@@ -468,12 +463,8 @@ class AnalyticsEngine:
                     "data": daily_data,
                 }
 
-            durations = [
-                d["avg_duration_ms"] for d in daily_data if d["avg_duration_ms"]
-            ]
-            iterations = [
-                d["avg_iterations"] for d in daily_data if d["avg_iterations"]
-            ]
+            durations = [d["avg_duration_ms"] for d in daily_data if d["avg_duration_ms"]]
+            iterations = [d["avg_iterations"] for d in daily_data if d["avg_iterations"]]
 
             degradation_detected = False
             insights = []
@@ -516,7 +507,7 @@ class AnalyticsEngine:
             logger.error(f"Error detecting performance degradation: {e}")
             return {"error": str(e)}
 
-    def detect_success_rate_drop(self, days: int = 7) -> Dict[str, Any]:
+    def detect_success_rate_drop(self, days: int = 7) -> dict[str, Any]:
         """Detect success rate decline over time.
 
         Args:
@@ -531,11 +522,11 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         DATE(s.created_at) as date,
                         COUNT(*) as total,
                         COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) as successful,
-                        ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN s.final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions s
                     WHERE s.created_at >= datetime('now', '-' || ? || ' days')
@@ -553,9 +544,7 @@ class AnalyticsEngine:
                     "data": daily_data,
                 }
 
-            success_rates = [
-                d["success_rate"] for d in daily_data if d["success_rate"] is not None
-            ]
+            success_rates = [d["success_rate"] for d in daily_data if d["success_rate"] is not None]
 
             if len(success_rates) < 2:
                 return {"error": "Insufficient success rate data", "data": daily_data}
@@ -564,9 +553,7 @@ class AnalyticsEngine:
             drop_percent = 0
 
             if success_rates[0] > 0:
-                drop_percent = (
-                    (success_rates[0] - success_rates[-1]) / success_rates[0] * 100
-                )
+                drop_percent = (success_rates[0] - success_rates[-1]) / success_rates[0] * 100
                 if drop_percent > 10:
                     drop_detected = True
 
@@ -582,7 +569,7 @@ class AnalyticsEngine:
             logger.error(f"Error detecting success rate drop: {e}")
             return {"error": str(e)}
 
-    def analyze_token_usage_trend(self, days: int = 30) -> Dict[str, Any]:
+    def analyze_token_usage_trend(self, days: int = 30) -> dict[str, Any]:
         """Analyze token usage over time.
 
         Args:
@@ -597,7 +584,7 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         DATE(lr.created_at) as date,
                         lr.model,
                         SUM(lr.prompt_tokens) as total_prompt_tokens,
@@ -615,7 +602,7 @@ class AnalyticsEngine:
 
             cursor.execute(
                 """
-                SELECT 
+                SELECT
                     model,
                     SUM(prompt_tokens) as total_prompt_tokens,
                     SUM(completion_tokens) as total_completion_tokens,
@@ -639,7 +626,7 @@ class AnalyticsEngine:
             logger.error(f"Error analyzing token usage trend: {e}")
             return {"error": str(e)}
 
-    def compare_periods(self, days1: int = 7, days2: int = 7) -> Dict[str, Any]:
+    def compare_periods(self, days1: int = 7, days2: int = 7) -> dict[str, Any]:
         """Compare two time periods.
 
         Args:
@@ -655,10 +642,10 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_sessions,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                         AVG(total_duration_ms) as avg_duration_ms,
                         AVG(total_iterations) as avg_iterations,
@@ -672,10 +659,10 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_sessions,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                         AVG(total_duration_ms) as avg_duration_ms,
                         AVG(total_iterations) as avg_iterations,
@@ -718,7 +705,7 @@ class AnalyticsEngine:
             logger.error(f"Error comparing periods: {e}")
             return {"error": str(e)}
 
-    def generate_daily_insights(self, days: int = 1) -> Dict[str, Any]:
+    def generate_daily_insights(self, days: int = 1) -> dict[str, Any]:
         """Generate daily insights.
 
         Args:
@@ -740,10 +727,10 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_sessions,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                         AVG(total_duration_ms) as avg_duration_ms,
                         SUM(total_tool_calls) as total_tool_calls,
@@ -759,7 +746,7 @@ class AnalyticsEngine:
                     """
                     SELECT tool_name, COUNT(*) as failed_count
                     FROM tool_calls
-                    WHERE success = 0 
+                    WHERE success = 0
                         AND created_at >= datetime('now', '-' || ? || ' days')
                     GROUP BY tool_name
                     ORDER BY failed_count DESC
@@ -797,7 +784,7 @@ class AnalyticsEngine:
             logger.error(f"Error generating daily insights: {e}")
             return {"error": str(e)}
 
-    def generate_weekly_report(self) -> Dict[str, Any]:
+    def generate_weekly_report(self) -> dict[str, Any]:
         """Generate weekly summary report.
 
         Returns:
@@ -817,9 +804,7 @@ class AnalyticsEngine:
 
             report["performance"]["tools"] = self.db.get_tool_success_rate()
             report["performance"]["models"] = self.get_model_comparison()
-            report["performance"]["execution_times"] = (
-                self.get_execution_time_distribution()
-            )
+            report["performance"]["execution_times"] = self.get_execution_time_distribution()
 
             degradation = self.detect_performance_degradation(days=7)
             report["trends"]["degradation"] = degradation
@@ -846,7 +831,7 @@ class AnalyticsEngine:
             logger.error(f"Error generating weekly report: {e}")
             return {"error": str(e)}
 
-    def generate_model_recommendations(self) -> Dict[str, Any]:
+    def generate_model_recommendations(self) -> dict[str, Any]:
         """Generate model usage recommendations.
 
         Returns:
@@ -865,12 +850,8 @@ class AnalyticsEngine:
             if not models:
                 return {"error": "No model data available"}
 
-            speed_sorted = sorted(
-                models, key=lambda x: x.get("avg_response_time_ms", float("inf"))
-            )
-            quality_sorted = sorted(
-                models, key=lambda x: x.get("total_requests", 0), reverse=True
-            )
+            speed_sorted = sorted(models, key=lambda x: x.get("avg_response_time_ms", float("inf")))
+            quality_sorted = sorted(models, key=lambda x: x.get("total_requests", 0), reverse=True)
             efficiency_sorted = sorted(
                 models, key=lambda x: x.get("avg_token_efficiency", 0), reverse=True
             )
@@ -894,16 +875,14 @@ class AnalyticsEngine:
                 }
 
             if efficiency_sorted:
-                recommendations["overall_recommendation"] = efficiency_sorted[0][
-                    "model"
-                ]
+                recommendations["overall_recommendation"] = efficiency_sorted[0]["model"]
 
             return recommendations
         except Exception as e:
             logger.error(f"Error generating model recommendations: {e}")
             return {"error": str(e)}
 
-    def generate_optimization_suggestions(self) -> Dict[str, Any]:
+    def generate_optimization_suggestions(self) -> dict[str, Any]:
         """Generate performance optimization suggestions.
 
         Returns:
@@ -967,7 +946,7 @@ class AnalyticsEngine:
             logger.error(f"Error generating optimization suggestions: {e}")
             return {"error": str(e)}
 
-    def get_test_performance_summary(self) -> Dict[str, Any]:
+    def get_test_performance_summary(self) -> dict[str, Any]:
         """Get overall test performance summary.
 
         Returns:
@@ -979,7 +958,7 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_test_cases,
                         COUNT(CASE WHEN total_runs > 0 THEN 1 END) as executed_test_cases,
                         SUM(total_runs) as total_runs,
@@ -1035,7 +1014,7 @@ class AnalyticsEngine:
 
     def get_failing_test_cases(
         self, threshold: float = 50.0, min_runs: int = 3
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Get test cases that consistently fail.
 
         Args:
@@ -1050,7 +1029,7 @@ class AnalyticsEngine:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         test_case_id,
                         test_case_name,
                         category,
@@ -1069,7 +1048,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting failing test cases: {e}")
             return []
 
-    def get_regression_issues(self, days: int = 14) -> List[Dict[str, Any]]:
+    def get_regression_issues(self, days: int = 14) -> list[dict[str, Any]]:
         """Get tests that have regressed (success rate dropped).
 
         Args:
@@ -1084,15 +1063,15 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         tc.id as test_case_id,
                         tc.name as test_case_name,
                         tc.category,
                         COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days') THEN 1 END) as recent_runs,
-                        COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days') 
+                        COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days')
                                     AND tr.final_status = 'success' THEN 1 END) as recent_successful,
-                        ROUND(CAST(COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days') 
-                                        AND tr.final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days')
+                                        AND tr.final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(CASE WHEN tr.completed_at >= datetime('now', '-' || ? || ' days') THEN 1 END), 0) * 100, 2) as recent_success_rate,
                         tp.success_rate as historical_success_rate
                     FROM test_cases tc
@@ -1110,7 +1089,7 @@ class AnalyticsEngine:
             logger.error(f"Error getting regression issues: {e}")
             return []
 
-    def compare_test_runs(self, test_case_id: int) -> Dict[str, Any]:
+    def compare_test_runs(self, test_case_id: int) -> dict[str, Any]:
         """Compare test runs over time for a specific test case.
 
         Args:
@@ -1135,7 +1114,7 @@ class AnalyticsEngine:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         tr.id,
                         tr.run_number,
                         tr.status,
@@ -1146,7 +1125,7 @@ class AnalyticsEngine:
                         tr.completed_at,
                         COUNT(je.id) as total_evaluations,
                         COUNT(CASE WHEN je.passed = 1 THEN 1 END) as passed_evaluations,
-                        ROUND(CAST(COUNT(CASE WHEN je.passed = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN je.passed = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(je.id), 0) * 100, 2) as evaluation_pass_rate
                     FROM test_runs tr
                     LEFT JOIN judge_evaluations je ON tr.id = je.test_run_id
@@ -1165,21 +1144,15 @@ class AnalyticsEngine:
                     }
 
                 success_rates = [
-                    r["evaluation_pass_rate"]
-                    for r in runs
-                    if r["evaluation_pass_rate"] is not None
+                    r["evaluation_pass_rate"] for r in runs if r["evaluation_pass_rate"] is not None
                 ]
                 iterations = [
-                    r["total_iterations"]
-                    for r in runs
-                    if r["total_iterations"] is not None
+                    r["total_iterations"] for r in runs if r["total_iterations"] is not None
                 ]
 
                 trend = {}
                 if len(success_rates) >= 2:
-                    trend["success_rate_change"] = round(
-                        success_rates[-1] - success_rates[0], 2
-                    )
+                    trend["success_rate_change"] = round(success_rates[-1] - success_rates[0], 2)
                     trend["success_rate_trend"] = (
                         "improving" if trend["success_rate_change"] > 0 else "declining"
                     )
@@ -1308,16 +1281,14 @@ class AnalyticsEngine:
 
             if format == "json":
                 return json.dumps(report, indent=2, default=str)
-            else:
-                return report
+            return report
         except Exception as e:
             logger.error(f"Error generating report: {e}")
             if format == "json":
                 return json.dumps({"error": str(e)})
-            else:
-                return {"error": str(e)}
+            return {"error": str(e)}
 
-    def _calculate_percentile(self, values: List[float], percentile: float) -> float:
+    def _calculate_percentile(self, values: list[float], percentile: float) -> float:
         """Calculate percentile value.
 
         Args:
@@ -1334,9 +1305,7 @@ class AnalyticsEngine:
         index = int(n * percentile / 100)
         return values_sorted[min(index, n - 1)]
 
-    def _calculate_moving_average(
-        self, values: List[float], window: int
-    ) -> List[float]:
+    def _calculate_moving_average(self, values: list[float], window: int) -> list[float]:
         """Calculate moving average.
 
         Args:
@@ -1356,8 +1325,8 @@ class AnalyticsEngine:
         return moving_avg
 
     def _detect_anomalies(
-        self, values: List[float], threshold: float = 2.0
-    ) -> List[Dict[str, Any]]:
+        self, values: list[float], threshold: float = 2.0
+    ) -> list[dict[str, Any]]:
         """Detect statistical anomalies using standard deviation.
 
         Args:
@@ -1394,7 +1363,7 @@ class AnalyticsEngine:
         except Exception:
             return []
 
-    def _format_insight(self, insight: Dict[str, Any]) -> str:
+    def _format_insight(self, insight: dict[str, Any]) -> str:
         """Format insight for display.
 
         Args:

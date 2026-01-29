@@ -14,36 +14,29 @@ These tests validate the entire system working together end-to-end, covering:
 - Performance
 """
 
-import pytest
 import json
-import time
-import tempfile
 import shutil
+import tempfile
+import time
 from pathlib import Path
-from unittest.mock import Mock, MagicMock, patch
-from typing import Dict, List
-from datetime import datetime
 
+import pytest
+from core.analytics_engine import AnalyticsEngine
+from core.context_manager import ContextConfig, ContextManager
 from core.database_manager import DatabaseManager
-from core.tool_orchestrator import ToolOrchestrator, OrchestratorResult
 from core.parallel_executor import ParallelExecutor, ParallelExecutorConfig
-from core.self_corrector import SelfCorrector, SelfCorrectorConfig, CorrectionTrigger
-from core.tot_orchestrator import (
-    TreeOfThoughtsOrchestrator,
-    ToTConfig,
-    ExplorationStrategy,
-)
 from core.plan_execute_orchestrator import (
     PlanExecuteOrchestrator,
     PlanExecuteOrchestratorConfig,
-    Plan,
-    PlanStep,
     StepStatus,
 )
-from core.context_manager import ContextManager, ContextConfig, ContextType
-from core.analytics_engine import AnalyticsEngine
+from core.self_corrector import CorrectionTrigger, SelfCorrector, SelfCorrectorConfig
 from core.skill import BaseSkill, SkillResult
-from core.retry_manager import RetryManager
+from core.tool_orchestrator import ToolOrchestrator
+from core.tot_orchestrator import (
+    ToTConfig,
+    TreeOfThoughtsOrchestrator,
+)
 
 
 class MockLLMSkill:
@@ -82,7 +75,7 @@ class MockSkill(BaseSkill):
             return SkillResult(success=False, error=f"Mock skill {self.name} failed")
         return SkillResult(success=True, data={"result": f"Executed {self.name}"})
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         return {
             "type": "function",
             "function": {
@@ -95,7 +88,7 @@ class MockSkill(BaseSkill):
             },
         }
 
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         return []
 
 
@@ -150,9 +143,7 @@ def analytics_engine(db_manager):
 class TestEndToEndOrchestration:
     """Tests for end-to-end orchestration with database tracking."""
 
-    def test_simple_tool_call_with_database_tracking(
-        self, db_manager, mock_llm, mock_skills
-    ):
+    def test_simple_tool_call_with_database_tracking(self, db_manager, mock_llm, mock_skills):
         """Test simple tool call with complete database tracking."""
         orchestrator = ToolOrchestrator(
             llm_skill=mock_llm,
@@ -296,9 +287,7 @@ class TestEndToEndOrchestration:
             )
         )
 
-        result = orchestrator.execute_with_tools(
-            "Search and calculate", max_iterations=5
-        )
+        result = orchestrator.execute_with_tools("Search and calculate", max_iterations=5)
 
         assert result.success is True
         assert result.tool_calls_made == 2
@@ -423,9 +412,7 @@ class TestEndToEndOrchestration:
             )
         )
 
-        result = orchestrator.execute_with_tools(
-            "Try failing operation", max_iterations=5
-        )
+        result = orchestrator.execute_with_tools("Try failing operation", max_iterations=5)
 
         assert result.tool_calls_made == 1
         assert failing_skill.execute_count > 0
@@ -645,9 +632,7 @@ class TestDatabaseIntegration:
             tools=[{"name": "search"}],
         )
 
-        test_run_id = db_manager.create_test_run(
-            test_case_id=test_case_id, run_number=1
-        )
+        test_run_id = db_manager.create_test_run(test_case_id=test_case_id, run_number=1)
 
         evaluation_id = db_manager.add_judge_evaluation(
             test_run_id=test_run_id,
@@ -1182,9 +1167,7 @@ class TestTreeOfThoughtsIntegration:
             )
         )
 
-        result = orchestrator.execute_with_tot(
-            "Solve complex problem", max_iterations=5
-        )
+        result = orchestrator.execute_with_tot("Solve complex problem", max_iterations=5)
 
         assert result is not None
 
@@ -1237,7 +1220,7 @@ class TestTreeOfThoughtsIntegration:
             tot_config=ToTConfig(),
         )
 
-        from core.tot_orchestrator import ThoughtTree, ThoughtNode
+        from core.tot_orchestrator import ThoughtNode, ThoughtTree
 
         root = ThoughtNode(node_id="root", thought="Root", depth=0, score=0.5)
 
@@ -1276,7 +1259,7 @@ class TestTreeOfThoughtsIntegration:
             tot_config=ToTConfig(enable_backtracking=True),
         )
 
-        from core.tot_orchestrator import ThoughtTree, ThoughtNode
+        from core.tot_orchestrator import ThoughtNode, ThoughtTree
 
         root = ThoughtNode(node_id="root", thought="Root", depth=0, score=0.5)
 
@@ -1315,7 +1298,7 @@ class TestTreeOfThoughtsIntegration:
             tot_config=ToTConfig(enable_visualization=True),
         )
 
-        from core.tot_orchestrator import ThoughtTree, ThoughtNode
+        from core.tot_orchestrator import ThoughtNode, ThoughtTree
 
         root = ThoughtNode(node_id="root", thought="Root thought", depth=0, score=0.5)
 
@@ -1370,9 +1353,7 @@ class TestPlanAndExecuteIntegration:
             )
         )
 
-        plan = orchestrator.generate_plan(
-            "Search and calculate", {"session_id": "test"}
-        )
+        plan = orchestrator.generate_plan("Search and calculate", {"session_id": "test"})
 
         assert plan is not None
         assert len(plan.steps) > 0
@@ -1569,9 +1550,7 @@ class TestContextManagementIntegration:
 
     def test_context_windowing(self, context_manager):
         """Test context windowing."""
-        messages = [
-            {"role": "user", "content": "Message " + str(i) * 100} for i in range(20)
-        ]
+        messages = [{"role": "user", "content": "Message " + str(i) * 100} for i in range(20)]
 
         managed = context_manager.manage_context(messages, max_tokens=1000)
 
@@ -1617,9 +1596,7 @@ class TestContextManagementIntegration:
 
     def test_token_optimization(self, context_manager):
         """Test token optimization."""
-        messages = [
-            {"role": "user", "content": "Long message " * 50} for _ in range(10)
-        ]
+        messages = [{"role": "user", "content": "Long message " * 50} for _ in range(10)]
 
         optimized = context_manager.optimize_for_tokens(messages, max_tokens=500)
 

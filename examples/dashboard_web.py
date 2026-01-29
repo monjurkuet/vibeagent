@@ -5,12 +5,12 @@ Simple web interface for the Analytics Dashboard.
 This provides a Flask-based web UI for viewing analytics data.
 """
 
-from flask import Flask, render_template_string, jsonify, request
 from pathlib import Path
-from core.database_manager import DatabaseManager
-from core.analytics_engine import AnalyticsEngine
+
 from core.analytics_dashboard import AnalyticsDashboard
-import json
+from core.analytics_engine import AnalyticsEngine
+from core.database_manager import DatabaseManager
+from flask import Flask, jsonify, render_template_string, request
 
 app = Flask(__name__)
 

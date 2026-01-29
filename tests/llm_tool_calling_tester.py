@@ -1,10 +1,11 @@
-import requests
-import time
 import json
 import logging
-from typing import Dict, List, Any, Optional
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
+
+import requests
 
 # Configure extensive logging
 logging.basicConfig(
@@ -27,8 +28,8 @@ class TestResult:
     model: str
     test_case: str
     response_time: float
-    tool_calls: List[Dict[str, Any]] = field(default_factory=list)
-    error: Optional[str] = None
+    tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    error: str | None = None
     passed: bool = False
 
 
@@ -41,8 +42,8 @@ class ModelTestResults:
     failed: int
     average_response_time: float
     supports_tool_calling: bool
-    results: List[TestResult] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    results: list[TestResult] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 class LLMToolCallingTester:
@@ -51,13 +52,13 @@ class LLMToolCallingTester:
         base_url: str = "http://localhost:8087/v1",
         use_llm_judge: bool = True,
         judge_model: str = "gemini-2.5-flash",
-        db_manager: Optional[Any] = None,
+        db_manager: Any | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.models_url = f"{self.base_url}/models"
         self.chat_url = f"{self.base_url}/chat/completions"
-        self.models: List[Dict[str, Any]] = []
-        self.metrics: Dict[str, ModelTestResults] = {}
+        self.models: list[dict[str, Any]] = []
+        self.metrics: dict[str, ModelTestResults] = {}
         self.db_manager = db_manager
 
         # Initialize LLM judge for semantic verification
@@ -72,7 +73,7 @@ class LLMToolCallingTester:
         if self.db_manager:
             logger.info("✓ Database tracking enabled")
 
-    def _fetch_models(self) -> List[Dict[str, Any]]:
+    def _fetch_models(self) -> list[dict[str, Any]]:
         logger.info("=" * 80)
         logger.info("FETCHING AVAILABLE MODELS")
         logger.info("=" * 80)
@@ -98,7 +99,7 @@ class LLMToolCallingTester:
             raise Exception(f"Failed to fetch models: {e}")
 
     def test_model_tool_calling(
-        self, model: str, test_cases: List[Dict[str, Any]]
+        self, model: str, test_cases: list[dict[str, Any]]
     ) -> ModelTestResults:
         logger.info("")
         logger.info("╔" + "=" * 78 + "╗")
@@ -115,9 +116,7 @@ class LLMToolCallingTester:
         supports_tool_calling = False
 
         for i, test_case in enumerate(test_cases, 1):
-            logger.info(
-                f"┌─ TEST {i}/{len(test_cases)}: {test_case.get('name', 'unnamed')}"
-            )
+            logger.info(f"┌─ TEST {i}/{len(test_cases)}: {test_case.get('name', 'unnamed')}")
             logger.info("│")
 
             test_result = self._execute_test(model, test_case)
@@ -128,12 +127,10 @@ class LLMToolCallingTester:
                 supports_tool_calling = True
                 if test_result.passed:
                     passed += 1
-                    logger.info(
-                        f"│ ✓ PASSED (response time: {test_result.response_time:.3f}s)"
-                    )
+                    logger.info(f"│ ✓ PASSED (response time: {test_result.response_time:.3f}s)")
                 else:
                     failed += 1
-                    logger.info(f"│ ✗ FAILED - Tool calls didn't match expected")
+                    logger.info("│ ✗ FAILED - Tool calls didn't match expected")
             else:
                 failed += 1
                 if test_result.error:
@@ -143,9 +140,7 @@ class LLMToolCallingTester:
             logger.info("└" + "─" * 78)
             logger.info("")
 
-        average_response_time = (
-            total_response_time / len(test_cases) if test_cases else 0
-        )
+        average_response_time = total_response_time / len(test_cases) if test_cases else 0
 
         model_results = ModelTestResults(
             model=model,
@@ -169,15 +164,13 @@ class LLMToolCallingTester:
         logger.info(f"  Failed: {failed}")
         logger.info(f"  Success Rate: {(passed / len(test_cases) * 100):.1f}%")
         logger.info(f"  Avg Response Time: {average_response_time:.3f}s")
-        logger.info(
-            f"  Supports Tool Calling: {'✓ YES' if supports_tool_calling else '✗ NO'}"
-        )
+        logger.info(f"  Supports Tool Calling: {'✓ YES' if supports_tool_calling else '✗ NO'}")
         logger.info(f"{'=' * 80}")
         logger.info("")
 
         return model_results
 
-    def _execute_test(self, model: str, test_case: Dict[str, Any]) -> TestResult:
+    def _execute_test(self, model: str, test_case: dict[str, Any]) -> TestResult:
         start_time = time.time()
         tool_calls = []  # Initialize to avoid unbound variable
         test_run_id = None
@@ -194,9 +187,7 @@ class LLMToolCallingTester:
                     run_number=run_number,
                     status="running",
                 )
-                logger.info(
-                    f"│  📊 Test run created (ID: {test_run_id}, Run #{run_number})"
-                )
+                logger.info(f"│  📊 Test run created (ID: {test_run_id}, Run #{run_number})")
             except Exception as e:
                 logger.warning(f"│  ⚠ Failed to create test run: {e}")
 
@@ -258,11 +249,9 @@ class LLMToolCallingTester:
 
             # Log usage
             usage = data.get("usage", {})
-            logger.info(f"│    Usage:")
+            logger.info("│    Usage:")
             logger.info(f"│      Prompt Tokens: {usage.get('prompt_tokens', 0)}")
-            logger.info(
-                f"│      Completion Tokens: {usage.get('completion_tokens', 0)}"
-            )
+            logger.info(f"│      Completion Tokens: {usage.get('completion_tokens', 0)}")
             logger.info(f"│      Total Tokens: {usage.get('total_tokens', 0)}")
             logger.info("│")
 
@@ -278,14 +267,14 @@ class LLMToolCallingTester:
                 # Log content if present
                 content = message.get("content", "")
                 if content:
-                    logger.info(f"│    Content:")
+                    logger.info("│    Content:")
                     logger.info(f"│      {content}")
                     logger.info("│")
 
                 # Log reasoning_content if present
                 reasoning = message.get("reasoning_content", "")
                 if reasoning:
-                    logger.info(f"│    Reasoning:")
+                    logger.info("│    Reasoning:")
                     if len(reasoning) > 200:
                         logger.info(f"│      {reasoning[:200]}... (truncated)")
                     else:
@@ -307,19 +296,17 @@ class LLMToolCallingTester:
                         func_args = function.get("arguments", "{}")
 
                         logger.info(f"│        Function: {func_name}")
-                        logger.info(f"│        Arguments:")
+                        logger.info("│        Arguments:")
                         try:
                             args_dict = (
-                                json.loads(func_args)
-                                if isinstance(func_args, str)
-                                else func_args
+                                json.loads(func_args) if isinstance(func_args, str) else func_args
                             )
                             for key, value in args_dict.items():
                                 logger.info(f"│          {key}: {value}")
                         except:
                             logger.info(f"│          {func_args}")
                 else:
-                    logger.info(f"│      (No tool calls made)")
+                    logger.info("│      (No tool calls made)")
 
                 logger.info("│")
 
@@ -396,9 +383,7 @@ class LLMToolCallingTester:
                         final_status="error",
                     )
                 except Exception as db_error:
-                    logger.warning(
-                        f"│  ⚠ Failed to update test run with error: {db_error}"
-                    )
+                    logger.warning(f"│  ⚠ Failed to update test run with error: {db_error}")
 
             return TestResult(
                 success=False,
@@ -415,7 +400,7 @@ class LLMToolCallingTester:
             logger.error(f"│  Error Type: {type(e).__name__}")
             import traceback
 
-            logger.error(f"│  Traceback:")
+            logger.error("│  Traceback:")
             for line in traceback.format_exc().split("\n"):
                 if line.strip():
                     logger.error(f"│    {line}")
@@ -431,9 +416,7 @@ class LLMToolCallingTester:
                         final_status="error",
                     )
                 except Exception as db_error:
-                    logger.warning(
-                        f"│  ⚠ Failed to update test run with error: {db_error}"
-                    )
+                    logger.warning(f"│  ⚠ Failed to update test run with error: {db_error}")
 
             return TestResult(
                 success=False,
@@ -445,7 +428,7 @@ class LLMToolCallingTester:
             )
 
     def _verify_tool_calls(
-        self, tool_calls: List[Dict[str, Any]], test_case: Dict[str, Any]
+        self, tool_calls: list[dict[str, Any]], test_case: dict[str, Any]
     ) -> bool:
         """Verify tool calls using LLM judge or exact matching."""
 
@@ -466,72 +449,63 @@ class LLMToolCallingTester:
             if judgment.get("details"):
                 details = judgment["details"]
                 if details.get("correct_tools"):
-                    logger.info(
-                        f"│  🤖 Correct tools: {', '.join(details['correct_tools'])}"
-                    )
+                    logger.info(f"│  🤖 Correct tools: {', '.join(details['correct_tools'])}")
                 if details.get("incorrect_tools"):
-                    logger.info(
-                        f"│  🤖 Incorrect tools: {', '.join(details['incorrect_tools'])}"
-                    )
+                    logger.info(f"│  🤖 Incorrect tools: {', '.join(details['incorrect_tools'])}")
                 if details.get("parameter_issues"):
-                    logger.info(
-                        f"│  🤖 Parameter issues: {', '.join(details['parameter_issues'])}"
-                    )
+                    logger.info(f"│  🤖 Parameter issues: {', '.join(details['parameter_issues'])}")
 
             return passed
-        else:
-            # Use exact matching (old behavior)
-            logger.info("│  🔍 Using exact matching verification")
+        # Use exact matching (old behavior)
+        logger.info("│  🔍 Using exact matching verification")
 
-            expected_tools = test_case.get("expected_tools", [])
+        expected_tools = test_case.get("expected_tools", [])
 
-            if not expected_tools:
-                return len(tool_calls) == 0
+        if not expected_tools:
+            return len(tool_calls) == 0
 
-            if len(tool_calls) != len(expected_tools):
-                logger.info(
-                    f"│  ✗ Wrong number of tools: expected {len(expected_tools)}, got {len(tool_calls)}"
-                )
+        if len(tool_calls) != len(expected_tools):
+            logger.info(
+                f"│  ✗ Wrong number of tools: expected {len(expected_tools)}, got {len(tool_calls)}"
+            )
+            return False
+
+        for tool_call, expected_tool in zip(tool_calls, expected_tools, strict=False):
+            function = tool_call.get("function", {})
+            function_name = function.get("name", "")
+            expected_name = expected_tool.get("name", "")
+
+            if function_name != expected_name:
+                logger.info(f"│  ✗ Wrong tool: expected {expected_name}, got {function_name}")
                 return False
 
-            for tool_call, expected_tool in zip(tool_calls, expected_tools):
-                function = tool_call.get("function", {})
-                function_name = function.get("name", "")
-                expected_name = expected_tool.get("name", "")
+            expected_params = expected_tool.get("parameters", {})
+            actual_params = function.get("arguments", {})
 
-                if function_name != expected_name:
+            if isinstance(actual_params, str):
+                try:
+                    actual_params = json.loads(actual_params)
+                except json.JSONDecodeError:
+                    logger.info("│  ✗ Failed to parse parameters")
+                    return False
+
+            for key, value in expected_params.items():
+                if key not in actual_params:
+                    logger.info(f"│  ✗ Missing parameter: {key}")
+                    return False
+                if actual_params[key] != value:
                     logger.info(
-                        f"│  ✗ Wrong tool: expected {expected_name}, got {function_name}"
+                        f"│  ✗ Parameter mismatch: {key} expected {value}, got {actual_params[key]}"
                     )
                     return False
 
-                expected_params = expected_tool.get("parameters", {})
-                actual_params = function.get("arguments", {})
-
-                if isinstance(actual_params, str):
-                    try:
-                        actual_params = json.loads(actual_params)
-                    except json.JSONDecodeError:
-                        logger.info(f"│  ✗ Failed to parse parameters")
-                        return False
-
-                for key, value in expected_params.items():
-                    if key not in actual_params:
-                        logger.info(f"│  ✗ Missing parameter: {key}")
-                        return False
-                    if actual_params[key] != value:
-                        logger.info(
-                            f"│  ✗ Parameter mismatch: {key} expected {value}, got {actual_params[key]}"
-                        )
-                        return False
-
-            return True
+        return True
 
     def run_test_case(
         self,
         model: str,
-        test_case: Dict[str, Any],
-        session_id: Optional[int] = None,
+        test_case: dict[str, Any],
+        session_id: int | None = None,
     ) -> TestResult:
         """Run a single test case with database tracking.
 
@@ -558,9 +532,7 @@ class LLMToolCallingTester:
                     session_id=session_id,
                     status="running",
                 )
-                logger.info(
-                    f"📊 Test run created (ID: {test_run_id}, Run #{run_number})"
-                )
+                logger.info(f"📊 Test run created (ID: {test_run_id}, Run #{run_number})")
             except Exception as e:
                 logger.warning(f"⚠ Failed to create test run: {e}")
 
@@ -576,9 +548,7 @@ class LLMToolCallingTester:
                     completed_at=datetime.now(),
                     total_iterations=1,
                     total_tool_calls=len(result.tool_calls),
-                    final_status="success"
-                    if result.success and result.passed
-                    else "failed",
+                    final_status="success" if result.success and result.passed else "failed",
                 )
 
                 # Store judge evaluation if LLM judge was used
@@ -598,9 +568,7 @@ class LLMToolCallingTester:
 
         return result
 
-    def test_all_models(
-        self, test_cases: List[Dict[str, Any]]
-    ) -> Dict[str, ModelTestResults]:
+    def test_all_models(self, test_cases: list[dict[str, Any]]) -> dict[str, ModelTestResults]:
         self._fetch_models()
 
         for model_info in self.models:
@@ -614,7 +582,7 @@ class LLMToolCallingTester:
 
         return self.metrics
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         total_models = len(self.metrics)
         total_tests = sum(m.total_tests for m in self.metrics.values())
         total_passed = sum(m.passed for m in self.metrics.values())
@@ -624,9 +592,7 @@ class LLMToolCallingTester:
             if total_models
             else 0
         )
-        tool_calling_models = sum(
-            1 for m in self.metrics.values() if m.supports_tool_calling
-        )
+        tool_calling_models = sum(1 for m in self.metrics.values() if m.supports_tool_calling)
 
         return {
             "total_models": total_models,
@@ -639,7 +605,7 @@ class LLMToolCallingTester:
             "models": self.metrics,
         }
 
-    def _get_or_create_test_case(self, test_case: Dict[str, Any]) -> Optional[int]:
+    def _get_or_create_test_case(self, test_case: dict[str, Any]) -> int | None:
         if not self.db_manager:
             return None
 
@@ -661,8 +627,8 @@ class LLMToolCallingTester:
             description = test_case.get("description", "")
             messages = test_case.get("messages", [])
             tools = test_case.get("tools", [])
-            expected_tools = test_case.get("expected_tools", None)
-            expected_parameters = test_case.get("expected_parameters", None)
+            expected_tools = test_case.get("expected_tools")
+            expected_parameters = test_case.get("expected_parameters")
             expect_no_tools = test_case.get("expect_no_tools", False)
 
             test_case_id = self.db_manager.create_test_case(
@@ -675,9 +641,7 @@ class LLMToolCallingTester:
                 expected_parameters=expected_parameters,
                 expect_no_tools=expect_no_tools,
             )
-            logger.info(
-                f"│  📊 Created new test case: {test_case_name} (ID: {test_case_id})"
-            )
+            logger.info(f"│  📊 Created new test case: {test_case_name} (ID: {test_case_id})")
             return test_case_id
 
         except Exception as e:
@@ -705,9 +669,9 @@ class LLMToolCallingTester:
     def store_judge_evaluation(
         self,
         test_run_id: int,
-        judgment: Dict[str, Any],
-        tool_call_id: Optional[int] = None,
-    ) -> Optional[int]:
+        judgment: dict[str, Any],
+        tool_call_id: int | None = None,
+    ) -> int | None:
         if not self.db_manager:
             return None
 
@@ -716,9 +680,9 @@ class LLMToolCallingTester:
             passed = judgment.get("passed", False)
             confidence = judgment.get("confidence", 0.5)
             reasoning = judgment.get("reasoning", "")
-            details = judgment.get("details", None)
-            criteria = judgment.get("criteria", None)
-            evaluation_time_ms = judgment.get("evaluation_time_ms", None)
+            details = judgment.get("details")
+            criteria = judgment.get("criteria")
+            evaluation_time_ms = judgment.get("evaluation_time_ms")
 
             evaluation_id = self.db_manager.add_judge_evaluation(
                 test_run_id=test_run_id,
@@ -739,9 +703,7 @@ class LLMToolCallingTester:
             logger.warning(f"│  ⚠ Failed to store judge evaluation: {e}")
             return None
 
-    def get_test_history(
-        self, test_case_name: str, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    def get_test_history(self, test_case_name: str, limit: int = 10) -> list[dict[str, Any]]:
         if not self.db_manager:
             return []
 
@@ -765,7 +727,7 @@ class LLMToolCallingTester:
             logger.warning(f"⚠ Failed to get test history: {e}")
             return []
 
-    def get_performance_trends(self, days: int = 30) -> Dict[str, Any]:
+    def get_performance_trends(self, days: int = 30) -> dict[str, Any]:
         if not self.db_manager:
             return {}
 

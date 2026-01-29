@@ -1,9 +1,9 @@
 import json
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Any
 
 
-def generate_json_report(results: Dict[str, Any], output_path: str) -> None:
+def generate_json_report(results: dict[str, Any], output_path: str) -> None:
     summary = generate_summary_statistics(results)
 
     report = {
@@ -40,9 +40,7 @@ def generate_json_report(results: Dict[str, Any], output_path: str) -> None:
 
     top_models = sorted(
         results.get("models", {}).items(),
-        key=lambda x: (x[1].passed / x[1].total_tests * 100)
-        if x[1].total_tests > 0
-        else 0,
+        key=lambda x: (x[1].passed / x[1].total_tests * 100) if x[1].total_tests > 0 else 0,
         reverse=True,
     )[:10]
 
@@ -63,7 +61,7 @@ def generate_json_report(results: Dict[str, Any], output_path: str) -> None:
         json.dump(report, f, indent=2)
 
 
-def generate_console_report(results: Dict[str, Any]) -> None:
+def generate_console_report(results: dict[str, Any]) -> None:
     summary = generate_summary_statistics(results)
 
     print("\n" + "=" * 80)
@@ -85,22 +83,16 @@ def generate_console_report(results: Dict[str, Any]) -> None:
 
     top_models = sorted(
         results.get("models", {}).items(),
-        key=lambda x: (x[1].passed / x[1].total_tests * 100)
-        if x[1].total_tests > 0
-        else 0,
+        key=lambda x: (x[1].passed / x[1].total_tests * 100) if x[1].total_tests > 0 else 0,
         reverse=True,
     )[:10]
 
     print("\n🏆 TOP 10 PERFORMING MODELS")
     print("-" * 80)
-    print(
-        f"{'Rank':<6} {'Model':<40} {'Success':<10} {'Passed':<8} {'Failed':<8} {'Avg Time':<10}"
-    )
+    print(f"{'Rank':<6} {'Model':<40} {'Success':<10} {'Passed':<8} {'Failed':<8} {'Avg Time':<10}")
     print("-" * 80)
     for rank, (model_id, result) in enumerate(top_models, 1):
-        success_rate = (
-            (result.passed / result.total_tests * 100) if result.total_tests > 0 else 0
-        )
+        success_rate = (result.passed / result.total_tests * 100) if result.total_tests > 0 else 0
         print(
             f"{rank:<6} {model_id:<40} {success_rate:>6.2f}% {result.passed:<8} {result.failed:<8} {result.average_response_time:>8.3f}s"
         )
@@ -122,13 +114,11 @@ def generate_console_report(results: Dict[str, Any]) -> None:
     print("=" * 80 + "\n")
 
 
-def generate_summary_statistics(results: Dict[str, Any]) -> Dict[str, Any]:
+def generate_summary_statistics(results: dict[str, Any]) -> dict[str, Any]:
     models = results.get("models", {})
 
     total_models = len(models)
-    models_with_tool_calling = sum(
-        1 for m in models.values() if m.supports_tool_calling
-    )
+    models_with_tool_calling = sum(1 for m in models.values() if m.supports_tool_calling)
     models_without_tool_calling = total_models - models_with_tool_calling
 
     total_tests = sum(m.total_tests for m in models.values())

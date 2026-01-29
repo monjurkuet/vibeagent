@@ -5,18 +5,17 @@ to explore multiple reasoning paths in parallel, evaluate them, and select the b
 approach for complex problem-solving tasks.
 """
 
+import heapq
 import json
-import uuid
-import time
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+import time
+import uuid
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from collections import deque
-import heapq
 
-from .tool_orchestrator import ToolOrchestrator, OrchestratorResult
 from .skill import BaseSkill, SkillResult
+from .tool_orchestrator import ToolOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +35,16 @@ class ThoughtNode:
 
     node_id: str
     thought: str
-    action: Optional[str] = None
-    action_input: Optional[Dict] = None
-    observation: Optional[str] = None
+    action: str | None = None
+    action_input: dict | None = None
+    observation: str | None = None
     score: float = 0.0
     confidence: float = 0.5
     depth: int = 0
-    parent_id: Optional[str] = None
-    children: List[str] = field(default_factory=list)
+    parent_id: str | None = None
+    children: list[str] = field(default_factory=list)
     status: str = "pending"
-    metadata: Dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if not self.metadata:
@@ -59,7 +58,7 @@ class ThoughtNode:
         """Check if node is root (no parent)."""
         return self.parent_id is None
 
-    def get_path_to_root(self, tree: "ThoughtTree") -> List["ThoughtNode"]:
+    def get_path_to_root(self, tree: "ThoughtTree") -> list["ThoughtNode"]:
         """Get the path from this node to the root."""
         path = []
         current = self
@@ -76,7 +75,7 @@ class ThoughtTree:
     """A tree structure for storing and managing thought nodes."""
 
     root_id: str
-    nodes: Dict[str, ThoughtNode] = field(default_factory=dict)
+    nodes: dict[str, ThoughtNode] = field(default_factory=dict)
     max_depth: int = 10
     max_nodes: int = 100
     created_at: float = field(default_factory=time.time)
@@ -90,30 +89,26 @@ class ThoughtTree:
         self.nodes[node.node_id] = node
         return True
 
-    def get_node(self, node_id: str) -> Optional[ThoughtNode]:
+    def get_node(self, node_id: str) -> ThoughtNode | None:
         """Get a node by ID."""
         return self.nodes.get(node_id)
 
-    def get_root(self) -> Optional[ThoughtNode]:
+    def get_root(self) -> ThoughtNode | None:
         """Get the root node."""
         return self.nodes.get(self.root_id)
 
-    def get_children(self, node_id: str) -> List[ThoughtNode]:
+    def get_children(self, node_id: str) -> list[ThoughtNode]:
         """Get all children of a node."""
         node = self.get_node(node_id)
         if not node:
             return []
-        return [
-            self.nodes.get(child_id)
-            for child_id in node.children
-            if child_id in self.nodes
-        ]
+        return [self.nodes.get(child_id) for child_id in node.children if child_id in self.nodes]
 
-    def get_leaves(self) -> List[ThoughtNode]:
+    def get_leaves(self) -> list[ThoughtNode]:
         """Get all leaf nodes."""
         return [node for node in self.nodes.values() if node.is_leaf()]
 
-    def get_all_paths(self) -> List[List[ThoughtNode]]:
+    def get_all_paths(self) -> list[list[ThoughtNode]]:
         """Get all paths from root to leaves."""
         root = self.get_root()
         if not root:
@@ -159,7 +154,7 @@ class ThoughtTree:
 
         return True
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """Get tree statistics."""
         depths = [node.depth for node in self.nodes.values()]
         return {
@@ -193,14 +188,14 @@ class ToTResult:
 
     success: bool
     final_response: str
-    selected_path: List[ThoughtNode]
-    tree_stats: Dict
+    selected_path: list[ThoughtNode]
+    tree_stats: dict
     iterations: int
     tool_calls_made: int
-    tool_results: List[Dict]
-    reasoning_trace: List[Dict]
-    error: Optional[str] = None
-    metadata: Dict = None
+    tool_results: list[dict]
+    reasoning_trace: list[dict]
+    error: str | None = None
+    metadata: dict = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -218,9 +213,9 @@ class TreeOfThoughtsOrchestrator(ToolOrchestrator):
     def __init__(
         self,
         llm_skill,
-        skills: Dict[str, BaseSkill],
+        skills: dict[str, BaseSkill],
         db_manager=None,
-        tot_config: Optional[ToTConfig] = None,
+        tot_config: ToTConfig | None = None,
     ):
         """Initialize the ToT orchestrator.
 
@@ -233,18 +228,16 @@ class TreeOfThoughtsOrchestrator(ToolOrchestrator):
         super().__init__(llm_skill, skills, db_manager, use_react=True)
 
         self.tot_config = tot_config or ToTConfig()
-        self.current_tree: Optional[ThoughtTree] = None
-        self.session_db_id: Optional[int] = None
-        self.node_db_ids: Dict[str, int] = {}
+        self.current_tree: ThoughtTree | None = None
+        self.session_db_id: int | None = None
+        self.node_db_ids: dict[str, int] = {}
 
         logger.info(
             f"TreeOfThoughtsOrchestrator initialized with strategy: "
             f"{self.tot_config.exploration_strategy.value}"
         )
 
-    def execute_with_tot(
-        self, user_message: str, max_iterations: int = 20
-    ) -> ToTResult:
+    def execute_with_tot(self, user_message: str, max_iterations: int = 20) -> ToTResult:
         """Execute user message using Tree of Thoughts reasoning.
 
         Args:
@@ -312,9 +305,7 @@ class TreeOfThoughtsOrchestrator(ToolOrchestrator):
             )
 
             if not selected_path and self.tot_config.fallback_to_sequential:
-                logger.warning(
-                    "ToT exploration failed, falling back to sequential execution"
-                )
+                logger.warning("ToT exploration failed, falling back to sequential execution")
                 return self._fallback_to_sequential(
                     user_message,
                     reasoning_trace,
@@ -426,10 +417,10 @@ Thought:"""
         self,
         root: ThoughtNode,
         max_iterations: int,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
-    ) -> Optional[List[ThoughtNode]]:
+        tool_results: list[dict],
+    ) -> list[ThoughtNode] | None:
         """Explore the thought tree using configured strategy.
 
         Args:
@@ -448,31 +439,30 @@ Thought:"""
             return self._explore_bfs(
                 root, max_iterations, reasoning_trace, tool_calls_made, tool_results
             )
-        elif strategy == ExplorationStrategy.DFS:
+        if strategy == ExplorationStrategy.DFS:
             return self._explore_dfs(
                 root, max_iterations, reasoning_trace, tool_calls_made, tool_results
             )
-        elif strategy == ExplorationStrategy.BEST_FIRST:
+        if strategy == ExplorationStrategy.BEST_FIRST:
             return self._explore_best_first(
                 root, max_iterations, reasoning_trace, tool_calls_made, tool_results
             )
-        elif strategy == ExplorationStrategy.BEAM_SEARCH:
+        if strategy == ExplorationStrategy.BEAM_SEARCH:
             return self._explore_beam_search(
                 root, max_iterations, reasoning_trace, tool_calls_made, tool_results
             )
-        else:
-            return self._explore_best_first(
-                root, max_iterations, reasoning_trace, tool_calls_made, tool_results
-            )
+        return self._explore_best_first(
+            root, max_iterations, reasoning_trace, tool_calls_made, tool_results
+        )
 
     def _explore_bfs(
         self,
         root: ThoughtNode,
         max_iterations: int,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
-    ) -> Optional[List[ThoughtNode]]:
+        tool_results: list[dict],
+    ) -> list[ThoughtNode] | None:
         """Breadth-First Search exploration."""
         queue = deque([(root, 0)])
         visited = {root.node_id}
@@ -482,9 +472,7 @@ Thought:"""
             current, depth = queue.popleft()
             iteration += 1
 
-            branches = self._generate_branches(
-                current, self.tot_config.branching_factor
-            )
+            branches = self._generate_branches(current, self.tot_config.branching_factor)
             reasoning_trace.append(
                 {
                     "iteration": iteration,
@@ -518,10 +506,10 @@ Thought:"""
         self,
         root: ThoughtNode,
         max_iterations: int,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
-    ) -> Optional[List[ThoughtNode]]:
+        tool_results: list[dict],
+    ) -> list[ThoughtNode] | None:
         """Depth-First Search exploration."""
         stack = [(root, 0)]
         iteration = 0
@@ -530,9 +518,7 @@ Thought:"""
             current, depth = stack.pop()
             iteration += 1
 
-            branches = self._generate_branches(
-                current, self.tot_config.branching_factor
-            )
+            branches = self._generate_branches(current, self.tot_config.branching_factor)
             reasoning_trace.append(
                 {
                     "iteration": iteration,
@@ -566,10 +552,10 @@ Thought:"""
         self,
         root: ThoughtNode,
         max_iterations: int,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
-    ) -> Optional[List[ThoughtNode]]:
+        tool_results: list[dict],
+    ) -> list[ThoughtNode] | None:
         """Best-First Search exploration using node scores."""
         heap = [(-root.score, root.node_id, root)]
         iteration = 0
@@ -578,9 +564,7 @@ Thought:"""
             _, _, current = heapq.heappop(heap)
             iteration += 1
 
-            branches = self._generate_branches(
-                current, self.tot_config.branching_factor
-            )
+            branches = self._generate_branches(current, self.tot_config.branching_factor)
             reasoning_trace.append(
                 {
                     "iteration": iteration,
@@ -614,10 +598,10 @@ Thought:"""
         self,
         root: ThoughtNode,
         max_iterations: int,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
-    ) -> Optional[List[ThoughtNode]]:
+        tool_results: list[dict],
+    ) -> list[ThoughtNode] | None:
         """Beam Search exploration keeping top K branches."""
         beam = [root]
         iteration = 0
@@ -626,9 +610,7 @@ Thought:"""
             new_beam = []
 
             for current in beam:
-                branches = self._generate_branches(
-                    current, self.tot_config.branching_factor
-                )
+                branches = self._generate_branches(current, self.tot_config.branching_factor)
 
                 for branch in branches:
                     if branch.score < self.tot_config.pruning_threshold:
@@ -653,9 +635,7 @@ Thought:"""
 
         return self._select_best_path()
 
-    def _generate_branches(
-        self, node: ThoughtNode, num_branches: int
-    ) -> List[ThoughtNode]:
+    def _generate_branches(self, node: ThoughtNode, num_branches: int) -> list[ThoughtNode]:
         """Generate multiple thought branches from a node.
 
         Args:
@@ -749,7 +729,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
 
         return node.confidence
 
-    def _select_best_path(self) -> Optional[List[ThoughtNode]]:
+    def _select_best_path(self) -> list[ThoughtNode] | None:
         """Select the best reasoning path from the tree.
 
         Returns:
@@ -763,7 +743,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
         if not paths:
             return None
 
-        def path_score(path: List[ThoughtNode]) -> float:
+        def path_score(path: list[ThoughtNode]) -> float:
             if not path:
                 return 0.0
 
@@ -777,7 +757,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
 
         return best_path
 
-    def _backtrack(self, node: ThoughtNode) -> Optional[ThoughtNode]:
+    def _backtrack(self, node: ThoughtNode) -> ThoughtNode | None:
         """Backtrack from a failed node to try alternative branches.
 
         Args:
@@ -891,9 +871,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
 
         def print_node(node: ThoughtNode, prefix: str = "", is_last: bool = True):
             connector = "└── " if is_last else "├── "
-            lines.append(
-                f"{prefix}{connector}[{node.score:.2f}] {node.thought[:60]}..."
-            )
+            lines.append(f"{prefix}{connector}[{node.score:.2f}] {node.thought[:60]}...")
 
             children = self.current_tree.get_children(node.node_id)
             if children:
@@ -914,9 +892,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
 
         return "\n".join(lines)
 
-    def _generate_final_response(
-        self, path: List[ThoughtNode], user_message: str
-    ) -> str:
+    def _generate_final_response(self, path: list[ThoughtNode], user_message: str) -> str:
         """Generate final response from selected path.
 
         Args:
@@ -926,9 +902,7 @@ Return JSON: {{"score": 0.8, "reasoning": "Brief explanation"}}"""
         Returns:
             Final response string
         """
-        path_summary = "\n".join(
-            [f"Step {i + 1}: {node.thought}" for i, node in enumerate(path)]
-        )
+        path_summary = "\n".join([f"Step {i + 1}: {node.thought}" for i, node in enumerate(path)])
 
         response_prompt = f"""Based on the following reasoning path, provide a final response to the user.
 
@@ -989,9 +963,9 @@ Provide a clear, comprehensive final answer that addresses the user's request ba
     def _fallback_to_sequential(
         self,
         user_message: str,
-        reasoning_trace: List[Dict],
+        reasoning_trace: list[dict],
         tool_calls_made: int,
-        tool_results: List[Dict],
+        tool_results: list[dict],
         start_time: float,
     ) -> ToTResult:
         """Fallback to sequential tool orchestration.
@@ -1009,9 +983,7 @@ Provide a clear, comprehensive final answer that addresses the user's request ba
         logger.info("Falling back to sequential ToolOrchestrator")
 
         try:
-            result = self.execute_with_tools(
-                user_message, max_iterations=10, use_react=True
-            )
+            result = self.execute_with_tools(user_message, max_iterations=10, use_react=True)
 
             return ToTResult(
                 success=result.success,

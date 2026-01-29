@@ -10,16 +10,16 @@ This module provides per-model configuration including:
 """
 
 import json
-import yaml
 import logging
 import os
-from typing import Dict, List, Optional, Any, Tuple, Set
-from dataclasses import dataclass, field, asdict
+from collections import defaultdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from datetime import datetime
-from collections import defaultdict
-import hashlib
+from typing import Any
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +55,14 @@ class PhaseSettings:
     temperature: float = 0.7
     max_tokens: int = 2000
     top_p: float = 0.9
-    top_k: Optional[int] = None
+    top_k: int | None = None
     presence_penalty: float = 0.0
     frequency_penalty: float = 0.0
-    stop_sequences: List[str] = field(default_factory=list)
-    response_format: Optional[str] = None
+    stop_sequences: list[str] = field(default_factory=list)
+    response_format: str | None = None
     enable_reasoning: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -72,7 +72,7 @@ class RetryPolicy:
     """Retry policy for model interactions."""
 
     max_retries: int = 3
-    retry_on_errors: List[str] = field(
+    retry_on_errors: list[str] = field(
         default_factory=lambda: ["timeout", "rate_limit", "server_error"]
     )
     backoff_multiplier: float = 2.0
@@ -80,7 +80,7 @@ class RetryPolicy:
     max_delay_ms: int = 10000
     retry_on_validation_failure: bool = True
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -94,8 +94,8 @@ class PromptTemplate:
     description: str
     model_type: str = "default"
     template_type: str = "system"
-    variables: List[str] = field(default_factory=list)
-    examples: List[Dict] = field(default_factory=list)
+    variables: list[str] = field(default_factory=list)
+    examples: list[dict] = field(default_factory=list)
 
     def format(self, **kwargs) -> str:
         """Format template with variables."""
@@ -105,7 +105,7 @@ class PromptTemplate:
             logger.warning(f"Missing template variable: {e}")
             return self.template
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -118,11 +118,11 @@ class ModelConfig:
     model_family: str
     display_name: str
 
-    phase_settings: Dict[str, PhaseSettings] = field(default_factory=dict)
-    prompt_templates: Dict[str, PromptTemplate] = field(default_factory=dict)
+    phase_settings: dict[str, PhaseSettings] = field(default_factory=dict)
+    prompt_templates: dict[str, PromptTemplate] = field(default_factory=dict)
     retry_policy: RetryPolicy = field(default_factory=RetryPolicy)
 
-    capabilities: Set[ModelCapability] = field(default_factory=set)
+    capabilities: set[ModelCapability] = field(default_factory=set)
     max_iterations: int = 10
     max_parallel_calls: int = 5
     context_window: int = 4096
@@ -130,9 +130,9 @@ class ModelConfig:
     supports_function_calling: bool = True
 
     special_instructions: str = ""
-    optimization_tips: List[str] = field(default_factory=list)
+    optimization_tips: list[str] = field(default_factory=list)
 
-    performance_metrics: Dict[str, Any] = field(default_factory=dict)
+    performance_metrics: dict[str, Any] = field(default_factory=dict)
     config_version: str = "1.0.0"
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
@@ -142,7 +142,7 @@ class ModelConfig:
         if not self.phase_settings:
             self.phase_settings = self._get_default_phase_settings()
 
-    def _get_default_phase_settings(self) -> Dict[str, PhaseSettings]:
+    def _get_default_phase_settings(self) -> dict[str, PhaseSettings]:
         """Get default phase settings."""
         return {
             ExecutionPhase.PLANNING.value: PhaseSettings(
@@ -192,7 +192,7 @@ class ModelConfig:
         phase_key = phase.value
         return self.phase_settings.get(phase_key, PhaseSettings())
 
-    def get_prompt_template(self, template_type: str) -> Optional[PromptTemplate]:
+    def get_prompt_template(self, template_type: str) -> PromptTemplate | None:
         """Get prompt template by type."""
         return self.prompt_templates.get(template_type)
 
@@ -200,16 +200,14 @@ class ModelConfig:
         """Check if model has specific capability."""
         return capability in self.capabilities
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for storage."""
         return {
             "model_name": self.model_name,
             "model_family": self.model_family,
             "display_name": self.display_name,
             "phase_settings": {k: v.to_dict() for k, v in self.phase_settings.items()},
-            "prompt_templates": {
-                k: v.to_dict() for k, v in self.prompt_templates.items()
-            },
+            "prompt_templates": {k: v.to_dict() for k, v in self.prompt_templates.items()},
             "retry_policy": self.retry_policy.to_dict(),
             "capabilities": [c.value for c in self.capabilities],
             "max_iterations": self.max_iterations,
@@ -226,11 +224,9 @@ class ModelConfig:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ModelConfig":
+    def from_dict(cls, data: dict[str, Any]) -> "ModelConfig":
         """Create ModelConfig from dictionary."""
-        phase_settings = {
-            k: PhaseSettings(**v) for k, v in data.get("phase_settings", {}).items()
-        }
+        phase_settings = {k: PhaseSettings(**v) for k, v in data.get("phase_settings", {}).items()}
         prompt_templates = {
             k: PromptTemplate(**v) for k, v in data.get("prompt_templates", {}).items()
         }
@@ -263,7 +259,7 @@ class ModelConfigRegistry:
     """Registry for model configurations."""
 
     def __init__(self):
-        self._configs: Dict[str, ModelConfig] = {}
+        self._configs: dict[str, ModelConfig] = {}
         self._load_predefined_configs()
 
     def _load_predefined_configs(self):
@@ -568,7 +564,7 @@ class ModelConfigRegistry:
         self._configs[config.model_name] = config
         logger.info(f"Registered configuration for model: {config.model_name}")
 
-    def get_config(self, model_name: str) -> Optional[ModelConfig]:
+    def get_config(self, model_name: str) -> ModelConfig | None:
         """Get configuration for a model."""
         model_lower = model_name.lower()
 
@@ -582,11 +578,11 @@ class ModelConfigRegistry:
 
         return None
 
-    def list_models(self) -> List[str]:
+    def list_models(self) -> list[str]:
         """List all registered models."""
         return list(self._configs.keys())
 
-    def get_models_by_family(self, family: str) -> List[ModelConfig]:
+    def get_models_by_family(self, family: str) -> list[ModelConfig]:
         """Get all models in a family."""
         return [
             config
@@ -595,9 +591,7 @@ class ModelConfigRegistry:
         ]
 
 
-def detect_model_capabilities(
-    model_name: str, base_url: Optional[str] = None
-) -> Set[ModelCapability]:
+def detect_model_capabilities(model_name: str, base_url: str | None = None) -> set[ModelCapability]:
     """Detect model capabilities from model name and optional API check.
 
     Args:
@@ -735,8 +729,8 @@ def get_max_tokens_for_phase(model_name: str, phase: ExecutionPhase) -> int:
 def get_prompt_template(
     model_name: str,
     template_type: str,
-    template_registry: Optional[Dict[str, PromptTemplate]] = None,
-) -> Optional[PromptTemplate]:
+    template_registry: dict[str, PromptTemplate] | None = None,
+) -> PromptTemplate | None:
     """Get prompt template for a model.
 
     Args:
@@ -777,7 +771,7 @@ class ModelConfigStorage:
         self.storage_path = Path(storage_path)
         self.storage_path.mkdir(parents=True, exist_ok=True)
 
-    def save_config(self, config: ModelConfig, version: Optional[str] = None) -> str:
+    def save_config(self, config: ModelConfig, version: str | None = None) -> str:
         """Save configuration to file storage.
 
         Args:
@@ -800,9 +794,7 @@ class ModelConfigStorage:
         logger.info(f"Saved config to {filepath}")
         return str(filepath)
 
-    def load_config(
-        self, model_name: str, version: Optional[str] = None
-    ) -> Optional[ModelConfig]:
+    def load_config(self, model_name: str, version: str | None = None) -> ModelConfig | None:
         """Load configuration from file storage.
 
         Args:
@@ -824,7 +816,7 @@ class ModelConfigStorage:
         config_files.sort(reverse=True)
         filepath = config_files[0]
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = json.load(f)
 
         return ModelConfig.from_dict(data)
@@ -844,7 +836,7 @@ class ModelConfigStorage:
 
         logger.info(f"Saved config to YAML: {filepath}")
 
-    def load_from_yaml(self, filepath: str) -> Optional[ModelConfig]:
+    def load_from_yaml(self, filepath: str) -> ModelConfig | None:
         """Load configuration from YAML file.
 
         Args:
@@ -858,12 +850,12 @@ class ModelConfigStorage:
         if not filepath.exists():
             return None
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             data = yaml.safe_load(f)
 
         return ModelConfig.from_dict(data)
 
-    def list_versions(self, model_name: str) -> List[str]:
+    def list_versions(self, model_name: str) -> list[str]:
         """List all versions of a model configuration.
 
         Args:
@@ -883,7 +875,7 @@ class ModelConfigStorage:
 
         return sorted(set(versions))
 
-    def delete_config(self, model_name: str, version: Optional[str] = None):
+    def delete_config(self, model_name: str, version: str | None = None):
         """Delete configuration file.
 
         Args:
@@ -911,7 +903,7 @@ class ModelConfigOptimizer:
             db_manager: Optional database manager for performance data
         """
         self.db_manager = db_manager
-        self.performance_history: Dict[str, List[Dict]] = defaultdict(list)
+        self.performance_history: dict[str, list[dict]] = defaultdict(list)
 
     def track_performance(
         self,
@@ -951,7 +943,7 @@ class ModelConfigOptimizer:
         model_name: str,
         phase: ExecutionPhase,
         min_samples: int = 10,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Get optimal settings based on performance history.
 
         Args:
@@ -974,15 +966,9 @@ class ModelConfigOptimizer:
             return None
 
         avg_temp = sum(r["temperature"] for r in successful_runs) / len(successful_runs)
-        avg_tokens = sum(r["max_tokens"] for r in successful_runs) / len(
-            successful_runs
-        )
-        avg_duration = sum(r["duration_ms"] for r in successful_runs) / len(
-            successful_runs
-        )
-        avg_iterations = sum(r["iterations"] for r in successful_runs) / len(
-            successful_runs
-        )
+        avg_tokens = sum(r["max_tokens"] for r in successful_runs) / len(successful_runs)
+        avg_duration = sum(r["duration_ms"] for r in successful_runs) / len(successful_runs)
+        avg_iterations = sum(r["iterations"] for r in successful_runs) / len(successful_runs)
 
         return {
             "temperature": round(avg_temp, 2),
@@ -992,7 +978,7 @@ class ModelConfigOptimizer:
             "sample_count": len(successful_runs),
         }
 
-    def suggest_optimizations(self, config: ModelConfig) -> List[str]:
+    def suggest_optimizations(self, config: ModelConfig) -> list[str]:
         """Suggest optimizations for a model configuration.
 
         Args:
@@ -1052,7 +1038,7 @@ class ModelConfigOptimizer:
         return tuned_config
 
 
-def load_config_from_env() -> Dict[str, Any]:
+def load_config_from_env() -> dict[str, Any]:
     """Load configuration from environment variables.
 
     Returns:
@@ -1068,7 +1054,7 @@ def load_config_from_env() -> Dict[str, Any]:
     return config
 
 
-def validate_config(config: ModelConfig) -> Tuple[bool, List[str]]:
+def validate_config(config: ModelConfig) -> tuple[bool, list[str]]:
     """Validate a model configuration.
 
     Args:
@@ -1107,7 +1093,7 @@ def validate_config(config: ModelConfig) -> Tuple[bool, List[str]]:
 def create_ab_test_config(
     base_config: ModelConfig,
     variant_name: str,
-    changes: Dict[str, Any],
+    changes: dict[str, Any],
 ) -> ModelConfig:
     """Create an A/B test variant configuration.
 
@@ -1158,9 +1144,7 @@ def integrate_with_orchestrator(orchestrator, model_name: str) -> ModelConfig:
         orchestrator.react_config["max_reasoning_steps"] = config.max_iterations
 
     if hasattr(orchestrator, "parallel_executor"):
-        orchestrator.parallel_executor.config.max_parallel_calls = (
-            config.max_parallel_calls
-        )
+        orchestrator.parallel_executor.config.max_parallel_calls = config.max_parallel_calls
 
     logger.info(f"Integrated model config for {model_name} with orchestrator")
 
@@ -1170,8 +1154,8 @@ def integrate_with_orchestrator(orchestrator, model_name: str) -> ModelConfig:
 def get_llm_params_for_phase(
     model_name: str,
     phase: ExecutionPhase,
-    additional_params: Optional[Dict[str, Any]] = None,
-) -> Dict[str, Any]:
+    additional_params: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Get complete LLM parameters for a specific phase.
 
     Args:

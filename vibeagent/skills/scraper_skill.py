@@ -1,7 +1,6 @@
 """Web scraping skill for the agent framework."""
 
 import requests
-from typing import Dict, Optional, List
 from bs4 import BeautifulSoup
 
 from ..core.skill import BaseSkill, SkillResult
@@ -14,13 +13,12 @@ class ScraperSkill(BaseSkill):
         super().__init__("web_scraper", "1.0.0")
         self.session = requests.Session()
         self.session.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         )
+        self.activate()
 
     @property
-    def parameters_schema(self) -> Dict:
+    def parameters_schema(self) -> dict:
         """JSON Schema for the skill's parameters."""
         return {
             "type": "object",
@@ -43,7 +41,7 @@ class ScraperSkill(BaseSkill):
             "required": ["url"],
         }
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         """Get the tool schema for function calling."""
         return {
             "type": "function",
@@ -60,11 +58,17 @@ class ScraperSkill(BaseSkill):
             # Test with a simple request
             response = self.session.get("https://httpbin.org/get", timeout=5)
             return response.status_code == 200
+        except requests.exceptions.Timeout:
+            print("Scraper validation timeout")
+            return False
+        except requests.exceptions.ConnectionError:
+            print("Scraper connection error")
+            return False
         except Exception as e:
             print(f"Scraper validation failed: {e}")
             return False
 
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         """Return list of dependencies."""
         return ["requests", "beautifulsoup4"]
 
@@ -97,5 +101,14 @@ class ScraperSkill(BaseSkill):
                     ]
 
             return SkillResult(success=True, data=result)
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
+            return SkillResult(
+                success=False,
+                error=f"HTTP error {e.response.status_code}: {str(e)}"
+            )
+        except requests.exceptions.Timeout:
+            return SkillResult(success=False, error="Request timed out")
+        except requests.exceptions.RequestException as e:
             return SkillResult(success=False, error=f"Scraping failed: {str(e)}")
+        except Exception as e:
+            return SkillResult(success=False, error=f"Unexpected error: {str(e)}")

@@ -216,7 +216,7 @@ CREATE INDEX IF NOT EXISTS idx_performance_metrics_session_id ON performance_met
 
 -- Views for common queries
 CREATE VIEW IF NOT EXISTS test_performance AS
-SELECT 
+SELECT
     tc.id as test_case_id,
     tc.name as test_case_name,
     tc.category,
@@ -229,7 +229,7 @@ LEFT JOIN test_runs tr ON tc.id = tr.test_case_id
 GROUP BY tc.id;
 
 CREATE VIEW IF NOT EXISTS tool_success_rate AS
-SELECT 
+SELECT
     tool_name,
     COUNT(*) as total_calls,
     COUNT(CASE WHEN success = 1 THEN 1 END) as successful_calls,
@@ -239,7 +239,7 @@ FROM tool_calls
 GROUP BY tool_name;
 
 CREATE VIEW IF NOT EXISTS model_comparison AS
-SELECT 
+SELECT
     model,
     COUNT(*) as total_requests,
     SUM(prompt_tokens) as total_prompt_tokens,

@@ -100,7 +100,7 @@ The test suite provides extensive console logging showing:
 2024-01-24 10:00:01 | INFO | ║                      TESTING MODEL: glm-4.7                                     ║
 2024-01-24 10:00:01 | INFO | ╚══════════════════════════════════════════════════════════════════════════════════════════╝
 2024-01-24 10:00:01 | INFO | Total test cases: 10
-2024-01-24 10:00:01 | INFO | 
+2024-01-24 10:00:01 | INFO |
 2024-01-24 10:00:01 | INFO | ┌─ TEST 1/10: Simple Tool Call - ArXiv Search
 2024-01-24 10:00:01 | INFO | │
 2024-01-24 10:00:01 | INFO | │  📤 SENDING REQUEST TO LLM

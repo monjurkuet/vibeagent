@@ -1,12 +1,8 @@
 import json
 import logging
-import base64
-from typing import Optional, Dict, List, Any, Tuple
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from pathlib import Path
-from io import BytesIO
-from collections import defaultdict
-from dataclasses import dataclass, asdict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +13,7 @@ class AlertConfig:
     threshold: float
     operator: str
     enabled: bool = True
-    notification_channels: List[str] = None
+    notification_channels: list[str] = None
 
     def __post_init__(self):
         if self.notification_channels is None:
@@ -34,13 +30,13 @@ class Alert:
     severity: str
     triggered_at: datetime
     resolved: bool = False
-    resolved_at: Optional[datetime] = None
+    resolved_at: datetime | None = None
 
 
 @dataclass
 class DashboardConfig:
     time_range: str = "24h"
-    filters: Dict[str, Any] = None
+    filters: dict[str, Any] = None
     refresh_interval: int = 60
 
     def __post_init__(self):
@@ -53,12 +49,12 @@ class AnalyticsDashboard:
         self.db = db_manager
         self.analytics = analytics_engine
         self.config = DashboardConfig()
-        self.alerts: List[Alert] = []
-        self.alert_configs: Dict[str, AlertConfig] = {}
+        self.alerts: list[Alert] = []
+        self.alert_configs: dict[str, AlertConfig] = {}
         self._cache = {}
         self._cache_ttl = 300
 
-    def _get_time_filter(self) -> Tuple[str, str]:
+    def _get_time_filter(self) -> tuple[str, str]:
         time_ranges = {
             "1h": ("datetime('now', '-1 hours')", "1 hour"),
             "24h": ("datetime('now', '-1 days')", "24 hours"),
@@ -74,7 +70,7 @@ class AnalyticsDashboard:
             key += f"_{k}_{v}"
         return key
 
-    def _get_cached(self, key: str) -> Optional[Any]:
+    def _get_cached(self, key: str) -> Any | None:
         if key in self._cache:
             cached_time, data = self._cache[key]
             if (datetime.now() - cached_time).total_seconds() < self._cache_ttl:
@@ -102,7 +98,7 @@ class AnalyticsDashboard:
         self.config.filters = {}
         self._clear_cache()
 
-    def get_overview_panel(self) -> Dict[str, Any]:
+    def get_overview_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("overview_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -116,10 +112,10 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_sessions,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                         AVG(total_duration_ms) as avg_duration_ms,
                         SUM(total_tool_calls) as total_tool_calls,
@@ -134,7 +130,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         SUM(prompt_tokens) as total_prompt_tokens,
                         SUM(completion_tokens) as total_completion_tokens,
                         SUM(total_tokens) as total_tokens,
@@ -148,10 +144,10 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_tool_calls,
                         COUNT(CASE WHEN success = 1 THEN 1 END) as successful_tool_calls,
-                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as tool_success_rate,
                         AVG(execution_time_ms) as avg_tool_execution_time_ms
                     FROM tool_calls
@@ -167,7 +163,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting overview panel: {e}")
             return {"error": str(e)}
 
-    def get_performance_panel(self) -> Dict[str, Any]:
+    def get_performance_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("performance_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -188,7 +184,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         DATE(created_at) as date,
                         AVG(total_duration_ms) as avg_duration_ms,
                         AVG(total_iterations) as avg_iterations,
@@ -203,7 +199,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         strftime('%H', created_at) as hour,
                         AVG(total_duration_ms) as avg_duration_ms,
                         COUNT(*) as session_count
@@ -213,9 +209,7 @@ class AnalyticsDashboard:
                     ORDER BY hour
                     """
                 )
-                performance["hourly_patterns"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                performance["hourly_patterns"] = [dict(row) for row in cursor.fetchall()]
 
             self._set_cache(cache_key, performance)
             return performance
@@ -223,7 +217,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting performance panel: {e}")
             return {"error": str(e)}
 
-    def get_test_results_panel(self) -> Dict[str, Any]:
+    def get_test_results_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("test_results_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -242,7 +236,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         tr.id,
                         tc.name as test_case_name,
                         tc.category,
@@ -264,7 +258,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting test results panel: {e}")
             return {"error": str(e)}
 
-    def get_tool_usage_panel(self) -> Dict[str, Any]:
+    def get_tool_usage_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("tool_usage_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -285,7 +279,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         DATE(created_at) as date,
                         tool_name,
                         COUNT(*) as call_count,
@@ -300,7 +294,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         tool_name,
                         error_type,
                         COUNT(*) as error_count
@@ -319,7 +313,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting tool usage panel: {e}")
             return {"error": str(e)}
 
-    def get_model_comparison_panel(self) -> Dict[str, Any]:
+    def get_model_comparison_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("model_comparison_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -338,7 +332,7 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         model,
                         DATE(created_at) as date,
                         SUM(total_tokens) as total_tokens,
@@ -350,13 +344,11 @@ class AnalyticsDashboard:
                     ORDER BY date DESC, model
                     """
                 )
-                model_comparison["token_usage"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                model_comparison["token_usage"] = [dict(row) for row in cursor.fetchall()]
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         model,
                         ROUND(AVG(response_time_ms), 2) as avg_response_time_ms,
                         ROUND(MIN(response_time_ms), 2) as min_response_time_ms,
@@ -368,9 +360,7 @@ class AnalyticsDashboard:
                     ORDER BY avg_response_time_ms ASC
                     """
                 )
-                model_comparison["response_times"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                model_comparison["response_times"] = [dict(row) for row in cursor.fetchall()]
 
             self._set_cache(cache_key, model_comparison)
             return model_comparison
@@ -378,7 +368,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting model comparison panel: {e}")
             return {"error": str(e)}
 
-    def get_error_analysis_panel(self) -> Dict[str, Any]:
+    def get_error_analysis_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("error_analysis_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -399,25 +389,23 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         error_type,
                         recovery_strategy,
                         COUNT(*) as total_attempts,
                         COUNT(CASE WHEN success = 1 THEN 1 END) as successful_recoveries,
-                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as recovery_rate
                     FROM error_recovery
                     GROUP BY error_type, recovery_strategy
                     ORDER BY recovery_rate DESC
                     """
                 )
-                error_analysis["recovery_rates"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                error_analysis["recovery_rates"] = [dict(row) for row in cursor.fetchall()]
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         DATE(created_at) as date,
                         error_type,
                         COUNT(*) as error_count
@@ -427,16 +415,14 @@ class AnalyticsDashboard:
                     ORDER BY date DESC, error_count DESC
                     """
                 )
-                error_analysis["error_timeline"] = [
-                    dict(row) for row in cursor.fetchall()
-                ]
+                error_analysis["error_timeline"] = [dict(row) for row in cursor.fetchall()]
 
                 cursor.execute(
                     f"""
-                    SELECT 
+                    SELECT
                         error_type,
                         COUNT(*) as total_errors,
-                        ROUND(CAST(COUNT(*) AS FLOAT) * 100.0 / 
+                        ROUND(CAST(COUNT(*) AS FLOAT) * 100.0 /
                               (SELECT COUNT(*) FROM tool_calls WHERE success = 0 AND created_at >= {time_filter}), 2) as percentage
                     FROM tool_calls
                     WHERE success = 0 AND created_at >= {time_filter}
@@ -453,7 +439,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting error analysis panel: {e}")
             return {"error": str(e)}
 
-    def get_trends_panel(self) -> Dict[str, Any]:
+    def get_trends_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("trends_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -474,7 +460,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting trends panel: {e}")
             return {"error": str(e)}
 
-    def get_insights_panel(self) -> Dict[str, Any]:
+    def get_insights_panel(self) -> dict[str, Any]:
         cache_key = self._get_cache_key("insights_panel")
         cached = self._get_cached(cache_key)
         if cached:
@@ -486,9 +472,7 @@ class AnalyticsDashboard:
                 "weekly_report": self.analytics.generate_weekly_report(),
                 "optimization_suggestions": self.analytics.generate_optimization_suggestions(),
                 "successful_patterns": self.analytics.find_successful_patterns(),
-                "alerts": [
-                    asdict(alert) for alert in self.alerts if not alert.resolved
-                ],
+                "alerts": [asdict(alert) for alert in self.alerts if not alert.resolved],
             }
 
             self._set_cache(cache_key, insights)
@@ -497,7 +481,7 @@ class AnalyticsDashboard:
             logger.error(f"Error getting insights panel: {e}")
             return {"error": str(e)}
 
-    def get_full_dashboard(self) -> Dict[str, Any]:
+    def get_full_dashboard(self) -> dict[str, Any]:
         dashboard = {
             "generated_at": datetime.now().isoformat(),
             "config": asdict(self.config),
@@ -519,18 +503,17 @@ class AnalyticsDashboard:
 
         if format.lower() == "json":
             return json.dumps(dashboard, indent=2, default=str)
-        elif format.lower() == "dict":
+        if format.lower() == "dict":
             return dashboard
-        elif format.lower() == "html":
+        if format.lower() == "html":
             return self._generate_html_report(dashboard)
-        elif format.lower() == "markdown":
+        if format.lower() == "markdown":
             return self._generate_markdown_report(dashboard)
-        elif format.lower() == "csv":
+        if format.lower() == "csv":
             return self._generate_csv_report(dashboard)
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+        raise ValueError(f"Unsupported format: {format}")
 
-    def generate_summary(self) -> Dict[str, Any]:
+    def generate_summary(self) -> dict[str, Any]:
         overview = self.get_overview_panel()
         insights = self.get_insights_panel()
         trends = self.get_trends_panel()
@@ -548,21 +531,17 @@ class AnalyticsDashboard:
             "degradation_detected": trends.get("degradation", {}).get(
                 "degradation_detected", False
             ),
-            "success_rate_drop": trends.get("success_rate_drop", {}).get(
-                "drop_detected", False
-            ),
+            "success_rate_drop": trends.get("success_rate_drop", {}).get("drop_detected", False),
             "top_recommendations": insights.get("optimization_suggestions", {}).get(
                 "suggestions", []
             )[:5],
         }
         return summary
 
-    def generate_detailed_report(self) -> Dict[str, Any]:
+    def generate_detailed_report(self) -> dict[str, Any]:
         return self.get_full_dashboard()
 
-    def generate_comparison_report(
-        self, metric: str = "success_rate"
-    ) -> Dict[str, Any]:
+    def generate_comparison_report(self, metric: str = "success_rate") -> dict[str, Any]:
         comparison = {
             "generated_at": datetime.now().isoformat(),
             "metric": metric,
@@ -572,7 +551,7 @@ class AnalyticsDashboard:
         }
         return comparison
 
-    def _generate_html_report(self, dashboard: Dict[str, Any]) -> str:
+    def _generate_html_report(self, dashboard: dict[str, Any]) -> str:
         html = f"""
 <!DOCTYPE html>
 <html>
@@ -637,9 +616,7 @@ class AnalyticsDashboard:
 
         insights = dashboard["panels"]["insights"]
         if "error" not in insights:
-            suggestions = insights.get("optimization_suggestions", {}).get(
-                "suggestions", []
-            )
+            suggestions = insights.get("optimization_suggestions", {}).get("suggestions", [])
             if suggestions:
                 html += """
         <div class="panel">
@@ -663,8 +640,8 @@ class AnalyticsDashboard:
 """
         return html
 
-    def _generate_markdown_report(self, dashboard: Dict[str, Any]) -> str:
-        md = f"# VibeAgent Analytics Dashboard\n\n"
+    def _generate_markdown_report(self, dashboard: dict[str, Any]) -> str:
+        md = "# VibeAgent Analytics Dashboard\n\n"
         md += f"**Generated:** {dashboard['generated_at']}\n"
         md += f"**Time Range:** {dashboard['config']['time_range']}\n\n"
 
@@ -682,9 +659,7 @@ class AnalyticsDashboard:
 
         insights = dashboard["panels"]["insights"]
         if "error" not in insights:
-            suggestions = insights.get("optimization_suggestions", {}).get(
-                "suggestions", []
-            )
+            suggestions = insights.get("optimization_suggestions", {}).get("suggestions", [])
             if suggestions:
                 md += "## Recommendations\n\n"
                 for i, suggestion in enumerate(suggestions[:10], 1):
@@ -693,7 +668,7 @@ class AnalyticsDashboard:
 
         return md
 
-    def _generate_csv_report(self, dashboard: Dict[str, Any]) -> str:
+    def _generate_csv_report(self, dashboard: dict[str, Any]) -> str:
         csv_lines = []
 
         overview = dashboard["panels"]["overview"]
@@ -738,9 +713,7 @@ class AnalyticsDashboard:
             logger.error(f"Error generating PDF: {e}")
             raise
 
-    def configure_alert(
-        self, metric: str, threshold: float, operator: str = "greater_than"
-    ):
+    def configure_alert(self, metric: str, threshold: float, operator: str = "greater_than"):
         alert_id = f"{metric}_{threshold}_{operator}"
         self.alert_configs[alert_id] = AlertConfig(
             metric=metric, threshold=threshold, operator=operator
@@ -760,11 +733,14 @@ class AnalyticsDashboard:
                 continue
 
             triggered = False
-            if config.operator == "greater_than" and metric_value > config.threshold:
-                triggered = True
-            elif config.operator == "less_than" and metric_value < config.threshold:
-                triggered = True
-            elif config.operator == "equals" and metric_value == config.threshold:
+            if (
+                config.operator == "greater_than"
+                and metric_value > config.threshold
+                or config.operator == "less_than"
+                and metric_value < config.threshold
+                or config.operator == "equals"
+                and metric_value == config.threshold
+            ):
                 triggered = True
 
             if triggered:
@@ -795,25 +771,16 @@ class AnalyticsDashboard:
                 alert.resolved_at = datetime.now()
                 logger.info(f"Alert resolved: {alert_id}")
 
-    def get_active_alerts(self) -> List[Alert]:
+    def get_active_alerts(self) -> list[Alert]:
         return [a for a in self.alerts if not a.resolved]
 
-    def get_alert_history(self, limit: int = 100) -> List[Alert]:
+    def get_alert_history(self, limit: int = 100) -> list[Alert]:
         return sorted(self.alerts, key=lambda a: a.triggered_at, reverse=True)[:limit]
 
     def export_dashboard(self, file_path: str, format: str = "json"):
         report = self.generate_report(format=format)
 
-        if format == "json":
-            with open(file_path, "w") as f:
-                f.write(report)
-        elif format == "html":
-            with open(file_path, "w") as f:
-                f.write(report)
-        elif format == "markdown":
-            with open(file_path, "w") as f:
-                f.write(report)
-        elif format == "csv":
+        if format == "json" or format == "html" or format == "markdown" or format == "csv":
             with open(file_path, "w") as f:
                 f.write(report)
         elif format == "pdf":
@@ -822,9 +789,7 @@ class AnalyticsDashboard:
         logger.info(f"Dashboard exported to {file_path}")
         return file_path
 
-    def get_metrics_by_filter(
-        self, filter_type: str, filter_value: str
-    ) -> Dict[str, Any]:
+    def get_metrics_by_filter(self, filter_type: str, filter_value: str) -> dict[str, Any]:
         time_filter, _ = self._get_time_filter()
 
         try:
@@ -834,10 +799,10 @@ class AnalyticsDashboard:
                 if filter_type == "model":
                     cursor.execute(
                         f"""
-                        SELECT 
+                        SELECT
                             COUNT(*) as total_sessions,
                             COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                            ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                            ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                                   / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                             AVG(total_duration_ms) as avg_duration_ms,
                             AVG(total_iterations) as avg_iterations
@@ -848,13 +813,13 @@ class AnalyticsDashboard:
                     )
                     return dict(cursor.fetchone())
 
-                elif filter_type == "tool":
+                if filter_type == "tool":
                     cursor.execute(
                         f"""
-                        SELECT 
+                        SELECT
                             COUNT(*) as total_calls,
                             COUNT(CASE WHEN success = 1 THEN 1 END) as successful_calls,
-                            ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT) 
+                            ROUND(CAST(COUNT(CASE WHEN success = 1 THEN 1 END) AS FLOAT)
                                   / NULLIF(COUNT(*), 0) * 100, 2) as success_rate,
                             AVG(execution_time_ms) as avg_execution_time_ms
                         FROM tool_calls
@@ -864,10 +829,10 @@ class AnalyticsDashboard:
                     )
                     return dict(cursor.fetchone())
 
-                elif filter_type == "status":
+                if filter_type == "status":
                     cursor.execute(
                         f"""
-                        SELECT 
+                        SELECT
                             COUNT(*) as total_sessions,
                             AVG(total_duration_ms) as avg_duration_ms,
                             AVG(total_iterations) as avg_iterations,
@@ -879,25 +844,24 @@ class AnalyticsDashboard:
                     )
                     return dict(cursor.fetchone())
 
-                else:
-                    return {"error": f"Unknown filter type: {filter_type}"}
+                return {"error": f"Unknown filter type: {filter_type}"}
         except Exception as e:
             logger.error(f"Error getting metrics by filter: {e}")
             return {"error": str(e)}
 
-    def get_parallel_execution_stats(self) -> Dict[str, Any]:
+    def get_parallel_execution_stats(self) -> dict[str, Any]:
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         COUNT(*) as total_parallel_sessions,
                         AVG(total_duration_ms) as avg_duration_ms,
                         AVG(total_tool_calls) as avg_tool_calls,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions
                     WHERE orchestrator_type = 'parallel_executor'
@@ -907,10 +871,10 @@ class AnalyticsDashboard:
 
                 cursor.execute(
                     """
-                    SELECT 
+                    SELECT
                         AVG(total_duration_ms) as avg_duration_ms,
                         COUNT(CASE WHEN final_status = 'success' THEN 1 END) as successful_sessions,
-                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                        ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                               / NULLIF(COUNT(*), 0) * 100, 2) as success_rate
                     FROM sessions
                     WHERE orchestrator_type != 'parallel_executor' OR orchestrator_type IS NULL
@@ -923,8 +887,7 @@ class AnalyticsDashboard:
                     "avg_duration_ms"
                 ):
                     speedup = (
-                        sequential_stats["avg_duration_ms"]
-                        / parallel_stats["avg_duration_ms"]
+                        sequential_stats["avg_duration_ms"] / parallel_stats["avg_duration_ms"]
                     )
 
                 return {
@@ -936,17 +899,17 @@ class AnalyticsDashboard:
             logger.error(f"Error getting parallel execution stats: {e}")
             return {"error": str(e)}
 
-    def get_forecast(self, metric: str, days: int = 7) -> Dict[str, Any]:
+    def get_forecast(self, metric: str, days: int = 7) -> dict[str, Any]:
         try:
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
 
                 if metric == "success_rate":
                     cursor.execute(
-                        f"""
-                        SELECT 
+                        """
+                        SELECT
                             DATE(created_at) as date,
-                            ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT) 
+                            ROUND(CAST(COUNT(CASE WHEN final_status = 'success' THEN 1 END) AS FLOAT)
                                   / NULLIF(COUNT(*), 0) * 100, 2) as value
                         FROM sessions
                         WHERE created_at >= datetime('now', '-30 days')
@@ -956,8 +919,8 @@ class AnalyticsDashboard:
                     )
                 elif metric == "duration":
                     cursor.execute(
-                        f"""
-                        SELECT 
+                        """
+                        SELECT
                             DATE(created_at) as date,
                             AVG(total_duration_ms) as value
                         FROM sessions

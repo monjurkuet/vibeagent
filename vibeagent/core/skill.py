@@ -1,10 +1,10 @@
 """Base skill interface for the agent framework."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 
 class SkillStatus(Enum):
@@ -22,8 +22,8 @@ class SkillResult:
 
     success: bool
     data: Any = None
-    error: Optional[str] = None
-    metadata: Optional[Dict] = None
+    error: str | None = None
+    metadata: dict | None = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -44,17 +44,14 @@ class BaseSkill(ABC):
     @abstractmethod
     def execute(self, **kwargs) -> SkillResult:
         """Execute the skill with given parameters."""
-        pass
 
     @abstractmethod
     def validate(self) -> bool:
         """Validate that the skill is properly configured."""
-        pass
 
     @abstractmethod
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         """Return list of dependencies required by this skill."""
-        pass
 
     def health_check(self) -> bool:
         """Check if the skill is healthy."""
@@ -63,7 +60,7 @@ class BaseSkill(ABC):
         except Exception:
             return False
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> dict:
         """Get skill information."""
         return {
             "name": self.name,
@@ -93,7 +90,7 @@ class BaseSkill(ABC):
         self.status = SkillStatus.INACTIVE
 
     @property
-    def parameters_schema(self) -> Dict:
+    def parameters_schema(self) -> dict:
         """
         Return JSON Schema for the skill's parameters.
 
@@ -118,7 +115,7 @@ class BaseSkill(ABC):
         """
         return {}
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         """
         Generate OpenAI-compatible function definition for this skill.
 
@@ -150,6 +147,5 @@ class BaseSkill(ABC):
             NotImplementedError: If not implemented by subclass
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} must implement get_tool_schema() "
-            "to support tool calling"
+            f"{self.__class__.__name__} must implement get_tool_schema() to support tool calling"
         )

@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_paper_tags_tag_id ON paper_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
 
 -- ROLLBACK SQL
--- ROLLBACK: 
+-- ROLLBACK:
 -- DROP INDEX IF EXISTS idx_tags_name;
 -- DROP INDEX IF EXISTS idx_paper_tags_tag_id;
 -- DROP TABLE IF EXISTS paper_tags;

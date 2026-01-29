@@ -1,19 +1,18 @@
 """Tests for ErrorHandler functionality."""
 
+
 import pytest
-import json
-from datetime import datetime
 from core.error_handler import (
-    ErrorHandler,
-    ErrorClassifier,
-    ErrorType,
-    SeverityLevel,
-    Retryability,
-    RecoveryStrategy,
-    ErrorContext,
     ErrorClassification,
-    RecoverySuggestion,
+    ErrorClassifier,
+    ErrorContext,
+    ErrorHandler,
     ErrorPatternDatabase,
+    ErrorType,
+    RecoveryStrategy,
+    RecoverySuggestion,
+    Retryability,
+    SeverityLevel,
 )
 
 
@@ -289,9 +288,7 @@ class TestErrorHandler:
         """Test likely causes generation."""
         handler = ErrorHandler()
 
-        causes = handler._get_likely_causes(
-            ErrorType.NETWORK, ConnectionError("Network error")
-        )
+        causes = handler._get_likely_causes(ErrorType.NETWORK, ConnectionError("Network error"))
 
         assert isinstance(causes, str)
         assert len(causes) > 0
@@ -378,9 +375,10 @@ class TestIntegration:
 
     def test_full_error_handling_workflow(self):
         """Test complete error handling workflow."""
-        from core.database_manager import DatabaseManager
-        import tempfile
         import os
+        import tempfile
+
+        from core.database_manager import DatabaseManager
 
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = os.path.join(tmpdir, "test.db")
@@ -415,9 +413,7 @@ class TestIntegration:
                 success=True,
             )
 
-            pattern = handler.pattern_db.get_pattern(
-                handler.get_error_fingerprint(error, context)
-            )
+            pattern = handler.pattern_db.get_pattern(handler.get_error_fingerprint(error, context))
 
             assert pattern is not None
             assert pattern.total_occurrences == 1

@@ -2,12 +2,12 @@
 import argparse
 import sys
 import traceback
-from typing import List, Dict, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any
 
+import report_generator
 from llm_tool_calling_tester import LLMToolCallingTester
 from test_cases import TEST_CASES
-import report_generator
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def test_single_model(
-    tester: LLMToolCallingTester, model_id: str, test_cases: List[Dict[str, Any]]
+    tester: LLMToolCallingTester, model_id: str, test_cases: list[dict[str, Any]]
 ) -> tuple[str, Any]:
     """Test a single model and return its results."""
     results = tester.test_model_tool_calling(model_id, test_cases)
@@ -49,9 +49,9 @@ def test_single_model(
 
 def run_tests_sequential(
     tester: LLMToolCallingTester,
-    models: List[str],
-    test_cases: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    models: list[str],
+    test_cases: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Run tests sequentially on each model."""
     all_results = {}
 
@@ -69,9 +69,9 @@ def run_tests_sequential(
 
 def run_tests_parallel(
     tester: LLMToolCallingTester,
-    models: List[str],
-    test_cases: List[Dict[str, Any]],
-) -> Dict[str, Any]:
+    models: list[str],
+    test_cases: list[dict[str, Any]],
+) -> dict[str, Any]:
     """Run tests in parallel across models."""
     all_results = {}
     completed_count = 0
@@ -90,9 +90,7 @@ def run_tests_parallel(
                 print(f"[{completed_count}/{len(models)}] Tested model: {model_id}")
                 all_results[model_id] = results
             except Exception as e:
-                print(
-                    f"[{completed_count}/{len(models)}] Error testing {model_id}: {e}"
-                )
+                print(f"[{completed_count}/{len(models)}] Error testing {model_id}: {e}")
                 all_results[model_id] = None
 
     return all_results
@@ -108,9 +106,7 @@ def main() -> int:
         print("Fetching available models...")
         all_models = tester._fetch_models()
         model_ids = [
-            m.get("id", m.get("name", ""))
-            for m in all_models
-            if m.get("id") or m.get("name")
+            m.get("id", m.get("name", "")) for m in all_models if m.get("id") or m.get("name")
         ]
 
         if not model_ids:
@@ -120,17 +116,13 @@ def main() -> int:
         if args.models:
             selected_models = [m for m in model_ids if m in args.models]
             if not selected_models:
-                print(
-                    f"None of the specified models found. Available models: {model_ids}"
-                )
+                print(f"None of the specified models found. Available models: {model_ids}")
                 return 1
             models_to_test = selected_models
         else:
             models_to_test = model_ids
 
-        print(
-            f"Testing {len(models_to_test)} models with {len(TEST_CASES)} test cases each...\n"
-        )
+        print(f"Testing {len(models_to_test)} models with {len(TEST_CASES)} test cases each...\n")
 
         if args.parallel:
             print("Running tests in parallel...")

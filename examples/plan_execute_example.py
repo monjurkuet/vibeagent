@@ -1,12 +1,13 @@
 """Example usage of Plan-and-Execute orchestrator."""
 
 import logging
-from skills.llm_skill import LLMSkill
+
+from core.database_manager import DatabaseManager
 from core.plan_execute_orchestrator import (
     PlanExecuteOrchestrator,
     PlanExecuteOrchestratorConfig,
 )
-from core.database_manager import DatabaseManager
+from skills.llm_skill import LLMSkill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -39,14 +40,16 @@ def main():
         config=config,
     )
 
-    user_message = "Research the latest developments in quantum computing and summarize the key findings"
+    user_message = (
+        "Research the latest developments in quantum computing and summarize the key findings"
+    )
 
     logger.info(f"Executing task with Plan-and-Execute: {user_message}")
 
     result = orchestrator.execute_with_tools(user_message, max_iterations=5)
 
     if result.success:
-        logger.info(f"Task completed successfully!")
+        logger.info("Task completed successfully!")
         logger.info(f"Response: {result.final_response}")
         logger.info(f"Iterations: {result.iterations}")
         logger.info(f"Tool calls made: {result.tool_calls_made}")

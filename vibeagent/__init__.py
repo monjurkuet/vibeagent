@@ -5,15 +5,14 @@ __author__ = "VibeAgent Team"
 __email__ = "team@vibeagent.ai"
 
 from .core import Agent, BaseSkill, SkillResult
-from .skills import ArxivSkill, ScraperSkill, LLMSkill, SqliteSkill
+from .skills import ArxivSkill, LLMSkill, ScraperSkill, SqliteSkill
 
 __all__ = [
     "Agent",
-    "BaseSkill", 
+    "BaseSkill",
     "SkillResult",
     "ArxivSkill",
     "ScraperSkill",
     "LLMSkill",
-    
     "SqliteSkill",
 ]

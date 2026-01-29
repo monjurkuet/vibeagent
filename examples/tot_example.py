@@ -12,10 +12,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 from core import (
     Agent,
     DatabaseManager,
-    TreeOfThoughtsOrchestrator,
-    ToTConfig,
     ExplorationStrategy,
     LLMSkill,
+    ToTConfig,
+    TreeOfThoughtsOrchestrator,
 )
 from skills.arxiv_skill import ArxivSkill
 

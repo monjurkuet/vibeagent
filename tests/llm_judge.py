@@ -3,10 +3,11 @@ LLM Judge for semantic verification of tool calls.
 Uses gemini-2.5-flash to evaluate if tool calls are semantically correct.
 """
 
-import requests
 import json
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
+
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +25,8 @@ class LLMJudge:
         self.judge_model = judge_model
 
     def verify_tool_call(
-        self, test_case: Dict[str, Any], actual_tool_calls: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, test_case: dict[str, Any], actual_tool_calls: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Use LLM to verify if tool calls are semantically correct.
 
@@ -99,7 +100,7 @@ class LLMJudge:
             return self._fallback_verification(test_case, actual_tool_calls)
 
     def _build_verification_prompt(
-        self, test_case: Dict[str, Any], actual_tool_calls: List[Dict[str, Any]]
+        self, test_case: dict[str, Any], actual_tool_calls: list[dict[str, Any]]
     ) -> str:
         """Build the prompt for the LLM judge."""
 
@@ -121,12 +122,10 @@ class LLMJudge:
                 for param_name, param_info in params.items():
                     desc = param_info.get("description", "")
                     param_type = param_info.get("type", "unknown")
-                    required = param_name in func.get("parameters", {}).get(
-                        "required", []
-                    )
+                    required = param_name in func.get("parameters", {}).get("required", [])
                     prompt += f"   - {param_name} ({param_type}){' [REQUIRED]' if required else ' [OPTIONAL]'}: {desc}\n"
 
-        prompt += f"""
+        prompt += """
 
 ## Expected Behavior
 """
@@ -141,7 +140,7 @@ class LLMJudge:
         else:
             prompt += "Expected to call appropriate tools based on the request.\n"
 
-        prompt += f"""
+        prompt += """
 
 ## Actual Tool Calls Made by Model
 """
@@ -157,9 +156,11 @@ class LLMJudge:
                     pass
 
             prompt += f"\n{i}. **{func_name}**\n"
-            prompt += f"   Arguments: {json.dumps(args, indent=2) if isinstance(args, dict) else args}\n"
+            prompt += (
+                f"   Arguments: {json.dumps(args, indent=2) if isinstance(args, dict) else args}\n"
+            )
 
-        prompt += f"""
+        prompt += """
 
 ## Evaluation Criteria
 
@@ -179,17 +180,17 @@ Consider the following when evaluating:
 Provide a JSON response with this exact structure:
 
 ```json
-{{
+{
   "passed": true/false,
   "reasoning": "Explain why it passed or failed in 1-2 sentences",
   "confidence": 0.0-1.0,
-  "details": {{
+  "details": {
     "correct_tools": ["list of correctly called tools"],
     "incorrect_tools": ["list of incorrectly called tools"],
     "parameter_issues": ["list of any parameter problems"],
     "overall_assessment": "brief summary"
-  }}
-}}
+  }
+}
 ```
 
 Examples:
@@ -204,8 +205,8 @@ Provide ONLY the JSON response, nothing else.
         return prompt
 
     def _fallback_verification(
-        self, test_case: Dict[str, Any], actual_tool_calls: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, test_case: dict[str, Any], actual_tool_calls: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Fallback to basic verification if LLM judge fails."""
 
         logger.warning("Using fallback verification")
@@ -219,25 +220,22 @@ Provide ONLY the JSON response, nothing else.
                 if passed
                 else "No tools expected but tools were called"
             )
+        # Basic check: same number of tools and same names
+        elif len(actual_tool_calls) != len(expected_tools):
+            passed = False
+            reasoning = f"Wrong number of tools: expected {len(expected_tools)}, got {len(actual_tool_calls)}"
         else:
-            # Basic check: same number of tools and same names
-            if len(actual_tool_calls) != len(expected_tools):
-                passed = False
-                reasoning = f"Wrong number of tools: expected {len(expected_tools)}, got {len(actual_tool_calls)}"
-            else:
-                passed = True
-                reasoning = "Basic verification passed (same tool count)"
-                for i, (actual, expected) in enumerate(
-                    zip(actual_tool_calls, expected_tools)
-                ):
-                    actual_name = actual.get("function", {}).get("name", "")
-                    expected_name = expected.get("name", "")
-                    if actual_name != expected_name:
-                        passed = False
-                        reasoning = (
-                            f"Tool {i}: expected {expected_name}, got {actual_name}"
-                        )
-                        break
+            passed = True
+            reasoning = "Basic verification passed (same tool count)"
+            for i, (actual, expected) in enumerate(
+                zip(actual_tool_calls, expected_tools, strict=False)
+            ):
+                actual_name = actual.get("function", {}).get("name", "")
+                expected_name = expected.get("name", "")
+                if actual_name != expected_name:
+                    passed = False
+                    reasoning = f"Tool {i}: expected {expected_name}, got {actual_name}"
+                    break
 
         return {
             "passed": passed,
@@ -247,8 +245,8 @@ Provide ONLY the JSON response, nothing else.
         }
 
     def verify_multiple_calls(
-        self, test_case: Dict[str, Any], actual_tool_calls: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self, test_case: dict[str, Any], actual_tool_calls: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Verify multiple tool calls (for complex scenarios).
 
@@ -268,7 +266,6 @@ Provide ONLY the JSON response, nothing else.
 
             # Actually, we want to verify against the overall expected tools
             # So let's just use the main verification
-            pass
 
         # For now, use the main verification
         return self.verify_tool_call(test_case, actual_tool_calls)

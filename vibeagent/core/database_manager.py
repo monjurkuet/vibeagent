@@ -1,10 +1,9 @@
-import sqlite3
 import json
 import logging
-from pathlib import Path
+import sqlite3
 from contextlib import contextmanager
-from typing import Optional, Dict, List
 from datetime import datetime
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +52,8 @@ class DatabaseManager:
         session_id: str,
         session_type: str,
         model: str,
-        orchestrator_type: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        orchestrator_type: str | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Create a new session."""
         with self.get_connection() as conn:
@@ -89,11 +88,9 @@ class DatabaseManager:
                     fields.append(f"{key} = ?")
                     values.append(value)
             values.append(session_id)
-            cursor.execute(
-                f"UPDATE sessions SET {', '.join(fields)} WHERE id = ?", values
-            )
+            cursor.execute(f"UPDATE sessions SET {', '.join(fields)} WHERE id = ?", values)
 
-    def get_session(self, session_id: int) -> Optional[Dict]:
+    def get_session(self, session_id: int) -> dict | None:
         """Get session by ID."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -107,14 +104,14 @@ class DatabaseManager:
         role: str,
         content: str,
         message_index: int,
-        raw_content: Optional[str] = None,
-        tokens_input: Optional[int] = None,
-        tokens_output: Optional[int] = None,
-        model: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        parent_message_id: Optional[int] = None,
-        metadata: Optional[Dict] = None,
+        raw_content: str | None = None,
+        tokens_input: int | None = None,
+        tokens_output: int | None = None,
+        model: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+        parent_message_id: int | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a message to the database."""
         with self.get_connection() as conn:
@@ -144,7 +141,7 @@ class DatabaseManager:
             )
             return cursor.lastrowid
 
-    def get_session_messages(self, session_id: int) -> List[Dict]:
+    def get_session_messages(self, session_id: int) -> list[dict]:
         """Get all messages for a session."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -157,17 +154,17 @@ class DatabaseManager:
     def add_llm_response(
         self,
         session_id: int,
-        message_id: Optional[int],
+        message_id: int | None,
         model: str,
         prompt_tokens: int,
         completion_tokens: int,
         total_tokens: int,
         response_time_ms: int,
-        finish_reason: Optional[str] = None,
-        raw_response: Optional[Dict] = None,
-        reasoning_content: Optional[str] = None,
+        finish_reason: str | None = None,
+        raw_response: dict | None = None,
+        reasoning_content: str | None = None,
         tool_calls_count: int = 0,
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add an LLM response to the database."""
         with self.get_connection() as conn:
@@ -202,15 +199,15 @@ class DatabaseManager:
         session_id: int,
         call_index: int,
         tool_name: str,
-        parameters: Dict,
+        parameters: dict,
         execution_time_ms: int,
         success: bool,
-        error_message: Optional[str] = None,
-        error_type: Optional[str] = None,
+        error_message: str | None = None,
+        error_type: str | None = None,
         retry_count: int = 0,
         is_parallel: bool = False,
-        parallel_batch_id: Optional[int] = None,
-        metadata: Optional[Dict] = None,
+        parallel_batch_id: int | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a tool call to the database."""
         with self.get_connection() as conn:
@@ -244,10 +241,10 @@ class DatabaseManager:
         self,
         tool_call_id: int,
         success: bool,
-        data: Optional[Dict] = None,
-        error: Optional[str] = None,
-        result_size_bytes: Optional[int] = None,
-        metadata: Optional[Dict] = None,
+        data: dict | None = None,
+        error: str | None = None,
+        result_size_bytes: int | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a tool result to the database."""
         with self.get_connection() as conn:
@@ -283,21 +280,19 @@ class DatabaseManager:
                     fields.append(f"{key} = ?")
                     values.append(value)
             values.append(tool_call_id)
-            cursor.execute(
-                f"UPDATE tool_calls SET {', '.join(fields)} WHERE id = ?", values
-            )
+            cursor.execute(f"UPDATE tool_calls SET {', '.join(fields)} WHERE id = ?", values)
 
     def create_test_case(
         self,
         name: str,
         category: str,
-        description: Optional[str],
-        messages: List[Dict],
-        tools: List[Dict],
-        expected_tools: Optional[List[Dict]] = None,
-        expected_parameters: Optional[Dict] = None,
+        description: str | None,
+        messages: list[dict],
+        tools: list[dict],
+        expected_tools: list[dict] | None = None,
+        expected_parameters: dict | None = None,
         expect_no_tools: bool = False,
-        metadata: Optional[Dict] = None,
+        metadata: dict | None = None,
     ) -> int:
         """Create a test case."""
         with self.get_connection() as conn:
@@ -327,7 +322,7 @@ class DatabaseManager:
         self,
         test_case_id: int,
         run_number: int,
-        session_id: Optional[int] = None,
+        session_id: int | None = None,
         status: str = "running",
     ) -> int:
         """Create a test run."""
@@ -357,9 +352,7 @@ class DatabaseManager:
                     fields.append(f"{key} = ?")
                     values.append(value)
             values.append(test_run_id)
-            cursor.execute(
-                f"UPDATE test_runs SET {', '.join(fields)} WHERE id = ?", values
-            )
+            cursor.execute(f"UPDATE test_runs SET {', '.join(fields)} WHERE id = ?", values)
 
     def add_judge_evaluation(
         self,
@@ -369,11 +362,11 @@ class DatabaseManager:
         confidence: float,
         reasoning: str,
         evaluation_type: str = "semantic",
-        criteria: Optional[Dict] = None,
-        details: Optional[Dict] = None,
-        evaluation_time_ms: Optional[int] = None,
-        tool_call_id: Optional[int] = None,
-        metadata: Optional[Dict] = None,
+        criteria: dict | None = None,
+        details: dict | None = None,
+        evaluation_time_ms: int | None = None,
+        tool_call_id: int | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a judge evaluation to the database."""
         with self.get_connection() as conn:
@@ -407,8 +400,8 @@ class DatabaseManager:
         iteration: int,
         step_type: str,
         content: str,
-        tool_call_id: Optional[int] = None,
-        metadata: Optional[Dict] = None,
+        tool_call_id: int | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a reasoning step (for ReAct/ToT)."""
         with self.get_connection() as conn:
@@ -439,7 +432,7 @@ class DatabaseManager:
         attempt_number: int,
         success: bool,
         original_error: str,
-        recovery_details: Optional[Dict] = None,
+        recovery_details: dict | None = None,
     ) -> int:
         """Add an error recovery attempt."""
         with self.get_connection() as conn:
@@ -471,11 +464,11 @@ class DatabaseManager:
         trigger: str,
         strategy_type: str,
         strategy_description: str,
-        original_error: Optional[str] = None,
+        original_error: str | None = None,
         success: bool = False,
         execution_time_ms: int = 0,
-        reflection_summary: Optional[str] = None,
-        metadata: Optional[str] = None,
+        reflection_summary: str | None = None,
+        metadata: str | None = None,
     ) -> int:
         """Add a self-correction attempt."""
         with self.get_connection() as conn:
@@ -507,8 +500,8 @@ class DatabaseManager:
         session_id: int,
         metric_name: str,
         metric_value: float,
-        metric_unit: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        metric_unit: str | None = None,
+        metadata: dict | None = None,
     ) -> int:
         """Add a performance metric."""
         with self.get_connection() as conn:
@@ -529,7 +522,7 @@ class DatabaseManager:
             )
             return cursor.lastrowid
 
-    def get_test_performance(self, days: int = 30) -> List[Dict]:
+    def get_test_performance(self, days: int = 30) -> list[dict]:
         """Get test performance for the last N days."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -543,14 +536,14 @@ class DatabaseManager:
             )
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_tool_success_rate(self) -> List[Dict]:
+    def get_tool_success_rate(self) -> list[dict]:
         """Get tool success rate statistics."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM tool_success_rate")
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_model_comparison(self) -> List[Dict]:
+    def get_model_comparison(self) -> list[dict]:
         """Get model comparison statistics."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
@@ -560,8 +553,8 @@ class DatabaseManager:
     def export_to_json(
         self,
         query: str,
-        params: Optional[tuple] = None,
-        file_path: Optional[str] = None,
+        params: tuple | None = None,
+        file_path: str | None = None,
     ) -> str:
         """Export query results to JSON."""
         with self.get_connection() as conn:
@@ -573,5 +566,4 @@ class DatabaseManager:
             with open(file_path, "w") as f:
                 json.dump(rows, f, indent=2)
             return file_path
-        else:
-            return json.dumps(rows, indent=2)
+        return json.dumps(rows, indent=2)

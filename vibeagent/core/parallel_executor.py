@@ -2,12 +2,10 @@
 
 import asyncio
 import json
+import logging
 import time
 import uuid
-import logging
-from typing import Dict, List, Optional, Any, Set, Tuple
 from dataclasses import dataclass, field
-from collections import defaultdict
 from enum import Enum
 
 from .skill import BaseSkill, SkillResult
@@ -30,14 +28,14 @@ class ParallelExecutionStatus(Enum):
 class ToolCallInfo:
     """Information about a tool call."""
 
-    tool_call: Dict
+    tool_call: dict
     index: int
-    dependencies: Set[int] = field(default_factory=set)
-    dependents: Set[int] = field(default_factory=set)
+    dependencies: set[int] = field(default_factory=set)
+    dependents: set[int] = field(default_factory=set)
     is_parallel_safe: bool = True
     execution_time_ms: float = 0
-    result: Optional[SkillResult] = None
-    error: Optional[str] = None
+    result: SkillResult | None = None
+    error: str | None = None
 
 
 @dataclass
@@ -45,7 +43,7 @@ class ParallelBatch:
     """A batch of tool calls that can be executed in parallel."""
 
     batch_id: str
-    call_indices: List[int]
+    call_indices: list[int]
     start_time: float = 0
     end_time: float = 0
     execution_time_ms: float = 0
@@ -57,14 +55,14 @@ class ParallelExecutionResult:
     """Result from parallel execution."""
 
     success: bool
-    results: List[Dict]
+    results: list[dict]
     total_time_ms: float
     parallel_time_ms: float
     sequential_time_estimate_ms: float
     speedup: float
-    batches: List[ParallelBatch]
-    errors: List[str]
-    metadata: Dict = field(default_factory=dict)
+    batches: list[ParallelBatch]
+    errors: list[str]
+    metadata: dict = field(default_factory=dict)
 
 
 class ParallelExecutorConfig:
@@ -73,13 +71,13 @@ class ParallelExecutorConfig:
     def __init__(
         self,
         max_parallel_calls: int = 5,
-        per_tool_parallel_limits: Optional[Dict[str, int]] = None,
+        per_tool_parallel_limits: dict[str, int] | None = None,
         default_timeout_ms: int = 30000,
         enable_parallel: bool = True,
         track_performance: bool = True,
         validate_thread_safety: bool = True,
-        resource_limit_cpu: Optional[int] = None,
-        resource_limit_memory_mb: Optional[int] = None,
+        resource_limit_cpu: int | None = None,
+        resource_limit_memory_mb: int | None = None,
     ):
         self.max_parallel_calls = max_parallel_calls
         self.per_tool_parallel_limits = per_tool_parallel_limits or {}
@@ -96,16 +94,16 @@ class ParallelExecutor:
 
     def __init__(
         self,
-        skills: Dict[str, BaseSkill],
+        skills: dict[str, BaseSkill],
         db_manager=None,
-        config: Optional[ParallelExecutorConfig] = None,
+        config: ParallelExecutorConfig | None = None,
     ):
         self.skills = skills
         self.db_manager = db_manager
         self.config = config or ParallelExecutorConfig()
-        self._performance_history: List[Dict] = []
+        self._performance_history: list[dict] = []
 
-    def identify_independent_calls(self, tool_calls: List[Dict]) -> List[int]:
+    def identify_independent_calls(self, tool_calls: list[dict]) -> list[int]:
         """Find calls that can run in parallel (no dependencies).
 
         Args:
@@ -118,13 +116,11 @@ class ParallelExecutor:
             return []
 
         call_info = self._analyze_tool_calls(tool_calls)
-        independent_indices = [
-            i for i, info in enumerate(call_info) if info.is_parallel_safe
-        ]
+        independent_indices = [i for i, info in enumerate(call_info) if info.is_parallel_safe]
 
         return independent_indices
 
-    def identify_dependent_calls(self, tool_calls: List[Dict]) -> List[int]:
+    def identify_dependent_calls(self, tool_calls: list[dict]) -> list[int]:
         """Find calls with dependencies that must run sequentially.
 
         Args:
@@ -137,13 +133,11 @@ class ParallelExecutor:
             return []
 
         call_info = self._analyze_tool_calls(tool_calls)
-        dependent_indices = [
-            i for i, info in enumerate(call_info) if not info.is_parallel_safe
-        ]
+        dependent_indices = [i for i, info in enumerate(call_info) if not info.is_parallel_safe]
 
         return dependent_indices
 
-    def build_dependency_graph(self, tool_calls: List[Dict]) -> List[ToolCallInfo]:
+    def build_dependency_graph(self, tool_calls: list[dict]) -> list[ToolCallInfo]:
         """Build execution graph showing dependencies between calls.
 
         Args:
@@ -163,7 +157,7 @@ class ParallelExecutor:
 
         return call_info
 
-    def topological_sort(self, calls: List[ToolCallInfo]) -> List[List[int]]:
+    def topological_sort(self, calls: list[ToolCallInfo]) -> list[list[int]]:
         """Determine execution order using topological sort.
 
         Args:
@@ -195,7 +189,7 @@ class ParallelExecutor:
         return batches
 
     def execute_parallel(
-        self, tool_calls: List[Dict], session_id: Optional[int] = None
+        self, tool_calls: list[dict], session_id: int | None = None
     ) -> ParallelExecutionResult:
         """Execute tool calls in parallel where possible.
 
@@ -236,9 +230,7 @@ class ParallelExecutor:
                 batch = ParallelBatch(batch_id=batch_id, call_indices=batch_indices)
 
                 if len(batch_indices) == 1:
-                    batch_result = self._execute_single(
-                        tool_calls[batch_indices[0]], session_id
-                    )
+                    batch_result = self._execute_single(tool_calls[batch_indices[0]], session_id)
                     results.append(batch_result)
                 else:
                     batch_results = self._execute_batch(
@@ -287,7 +279,7 @@ class ParallelExecutor:
             return self._execute_sequential(tool_calls, session_id)
 
     def _execute_sequential(
-        self, tool_calls: List[Dict], session_id: Optional[int] = None
+        self, tool_calls: list[dict], session_id: int | None = None
     ) -> ParallelExecutionResult:
         """Execute tool calls sequentially as fallback.
 
@@ -327,10 +319,10 @@ class ParallelExecutor:
 
     def _execute_batch(
         self,
-        tool_calls: List[Dict],
+        tool_calls: list[dict],
         batch_id: str,
-        session_id: Optional[int] = None,
-    ) -> List[Dict]:
+        session_id: int | None = None,
+    ) -> list[dict]:
         """Execute a batch of tool calls in parallel.
 
         Args:
@@ -391,9 +383,7 @@ class ParallelExecutor:
 
         return ordered_results
 
-    async def _execute_single_async(
-        self, tool_call: Dict, session_id: Optional[int] = None
-    ) -> Dict:
+    async def _execute_single_async(self, tool_call: dict, session_id: int | None = None) -> dict:
         """Execute a single tool call asynchronously.
 
         Args:
@@ -417,9 +407,7 @@ class ParallelExecutor:
         try:
             arguments = json.loads(arguments_str)
             loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None, lambda: skill.execute(**arguments)
-            )
+            result = await loop.run_in_executor(None, lambda: skill.execute(**arguments))
 
             return {
                 "success": result.success,
@@ -430,9 +418,7 @@ class ParallelExecutor:
         except Exception as e:
             return {"success": False, "error": str(e), "tool_call": tool_call}
 
-    def _execute_single(
-        self, tool_call: Dict, session_id: Optional[int] = None
-    ) -> Dict:
+    def _execute_single(self, tool_call: dict, session_id: int | None = None) -> dict:
         """Execute a single tool call synchronously.
 
         Args:
@@ -447,9 +433,7 @@ class ParallelExecutor:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         try:
-            result = loop.run_until_complete(
-                self._execute_single_async(tool_call, session_id)
-            )
+            result = loop.run_until_complete(self._execute_single_async(tool_call, session_id))
         finally:
             loop.close()
 
@@ -458,7 +442,7 @@ class ParallelExecutor:
 
         return result
 
-    def _analyze_tool_calls(self, tool_calls: List[Dict]) -> List[ToolCallInfo]:
+    def _analyze_tool_calls(self, tool_calls: list[dict]) -> list[ToolCallInfo]:
         """Analyze tool calls for parallel safety.
 
         Args:
@@ -485,7 +469,7 @@ class ParallelExecutor:
 
         return call_info
 
-    def _is_parallel_safe(self, skill: BaseSkill, tool_call: Dict) -> bool:
+    def _is_parallel_safe(self, skill: BaseSkill, tool_call: dict) -> bool:
         """Check if a tool call is safe for parallel execution.
 
         Args:
@@ -514,7 +498,7 @@ class ParallelExecutor:
 
         return True
 
-    def _detect_shared_resources(self, skill: BaseSkill, arguments: Dict) -> Set[str]:
+    def _detect_shared_resources(self, skill: BaseSkill, arguments: dict) -> set[str]:
         """Detect if tool call uses shared resources that could conflict.
 
         Args:
@@ -558,7 +542,7 @@ class ParallelExecutor:
 
         return False
 
-    def _estimate_sequential_time(self, tool_calls: List[Dict]) -> float:
+    def _estimate_sequential_time(self, tool_calls: list[dict]) -> float:
         """Estimate time for sequential execution.
 
         Args:
@@ -597,8 +581,8 @@ class ParallelExecutor:
         self,
         session_id: int,
         batch_id: str,
-        tool_calls: List[Dict],
-        results: List[Dict],
+        tool_calls: list[dict],
+        results: list[dict],
         execution_time_ms: float,
     ):
         """Track batch execution in database.
@@ -614,7 +598,7 @@ class ParallelExecutor:
             return
 
         try:
-            for i, (tool_call, result) in enumerate(zip(tool_calls, results)):
+            for i, (tool_call, result) in enumerate(zip(tool_calls, results, strict=False)):
                 function_info = tool_call.get("function", {})
                 function_name = function_info.get("name")
                 arguments_str = function_info.get("arguments", "{}")
@@ -652,7 +636,7 @@ class ParallelExecutor:
         self,
         session_id: int,
         result: ParallelExecutionResult,
-        batches: List[ParallelBatch],
+        batches: list[ParallelBatch],
     ):
         """Store parallel execution metrics in database.
 
@@ -689,7 +673,7 @@ class ParallelExecutor:
         except Exception as e:
             logger.error(f"Failed to store parallel metrics: {e}")
 
-    def get_performance_stats(self) -> Dict:
+    def get_performance_stats(self) -> dict:
         """Get performance statistics.
 
         Returns:
@@ -705,9 +689,9 @@ class ParallelExecutor:
             self._performance_history
         )
 
-        avg_success_rate = sum(
-            m["success_rate"] for m in self._performance_history
-        ) / len(self._performance_history)
+        avg_success_rate = sum(m["success_rate"] for m in self._performance_history) / len(
+            self._performance_history
+        )
 
         return {
             "avg_speedup": avg_speedup,

@@ -1,8 +1,7 @@
 """Core agent implementation."""
 
-from typing import Dict, List, Optional, Any
 from datetime import datetime
-import json
+from typing import Any
 
 from .skill import BaseSkill, SkillResult, SkillStatus
 
@@ -12,9 +11,9 @@ class Agent:
 
     def __init__(self, name: str = "VibeAgent"):
         self.name = name
-        self.skills: Dict[str, BaseSkill] = {}
+        self.skills: dict[str, BaseSkill] = {}
         self.created_at = datetime.now().isoformat()
-        self.memory: Dict = {}
+        self.memory: dict = {}
 
     def register_skill(self, skill: BaseSkill):
         """Register a new skill."""
@@ -30,15 +29,15 @@ class Agent:
             del self.skills[skill_name]
             print(f"🗑️  Unregistered skill: {skill_name}")
 
-    def get_skill(self, skill_name: str) -> Optional[BaseSkill]:
+    def get_skill(self, skill_name: str) -> BaseSkill | None:
         """Get a skill by name."""
         return self.skills.get(skill_name)
 
-    def list_skills(self) -> List[Dict]:
+    def list_skills(self) -> list[dict]:
         """List all registered skills."""
         return [skill.get_info() for skill in self.skills.values()]
 
-    def get_available_tools(self) -> List[Dict[str, Any]]:
+    def get_available_tools(self) -> list[dict[str, Any]]:
         """Get all active skills as tool definitions for LLM use.
 
         Returns:
@@ -48,9 +47,7 @@ class Agent:
         tools = []
         for skill in self.skills.values():
             if skill.status == SkillStatus.ACTIVE:
-                if hasattr(skill, "get_tool_schema") and callable(
-                    skill.get_tool_schema
-                ):
+                if hasattr(skill, "get_tool_schema") and callable(skill.get_tool_schema):
                     try:
                         schema = skill.get_tool_schema()
                         if schema:
@@ -83,12 +80,9 @@ class Agent:
             skill._record_error()
             return SkillResult(success=False, error=f"Skill execution failed: {str(e)}")
 
-    def health_check(self) -> Dict[str, bool]:
+    def health_check(self) -> dict[str, bool]:
         """Check health of all skills."""
-        return {
-            skill_name: skill.health_check()
-            for skill_name, skill in self.skills.items()
-        }
+        return {skill_name: skill.health_check() for skill_name, skill in self.skills.items()}
 
     def self_heal(self):
         """Attempt to heal broken skills."""
@@ -116,13 +110,13 @@ class Agent:
         """Store information in agent memory."""
         self.memory[key] = {"value": value, "timestamp": datetime.now().isoformat()}
 
-    def recall(self, key: str) -> Optional[Any]:
+    def recall(self, key: str) -> Any | None:
         """Retrieve information from agent memory."""
         if key in self.memory:
             return self.memory[key]["value"]
         return None
 
-    def get_status(self) -> Dict:
+    def get_status(self) -> dict:
         """Get agent status."""
         return {
             "name": self.name,

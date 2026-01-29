@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 class Config:
@@ -13,41 +13,27 @@ class Config:
         self.config = self._load_config()
         self.ports = self._load_ports()
 
-    def _load_config(self) -> Dict:
+    def _load_config(self) -> dict:
         """Load configuration from file."""
         if self.config_path.exists():
-            with open(self.config_path, 'r') as f:
+            with open(self.config_path) as f:
                 return json.load(f)
         return self._default_config()
 
-    def _default_config(self) -> Dict:
+    def _default_config(self) -> dict:
         """Return default configuration."""
         return {
-            "agent": {
-                "name": "VibeAgent",
-                "version": "1.0.0"
-            },
+            "agent": {"name": "VibeAgent", "version": "1.0.0"},
             "skills": {
-                "arxiv": {
-                    "enabled": True,
-                    "max_results": 50,
-                    "months_back": 6
-                },
-                "scraper": {
-                    "enabled": True,
-                    "timeout": 10
-                },
+                "arxiv": {"enabled": True, "max_results": 50, "months_back": 6},
+                "scraper": {"enabled": True, "timeout": 10},
                 "llm": {
                     "enabled": True,
                     "base_url": "http://localhost:8087/v1",
-                    "model": "glm-4.7"
-                }
+                    "model": "glm-4.7",
+                },
             },
-            "pocketbase": {
-                "url": "http://localhost:8090",
-                "email": "",
-                "password": ""
-            },
+            "pocketbase": {"url": "http://localhost:8090", "email": "", "password": ""},
             "topics": [
                 "context engineering",
                 "prompt engineering",
@@ -57,19 +43,19 @@ class Config:
                 "vector database",
                 "RAG retrieval augmented generation",
                 "agent framework",
-                "LLM agents"
-            ]
+                "LLM agents",
+            ],
         }
 
-    def _load_ports(self) -> Dict:
+    def _load_ports(self) -> dict:
         """Load port configuration."""
         ports_path = Path("config/ports.json")
         if ports_path.exists():
-            with open(ports_path, 'r') as f:
+            with open(ports_path) as f:
                 return json.load(f)
         return self._default_ports()
 
-    def _default_ports(self) -> Dict:
+    def _default_ports(self) -> dict:
         """Return default port configuration."""
         return {
             "ports": {
@@ -82,13 +68,13 @@ class Config:
                 "llm": 9005,
                 "benchmark": 9006,
                 "agent": 9007,
-                "dashboard": 9008
+                "dashboard": 9008,
             },
             "port_blocks": {
                 "api_block": "9000-9099",
                 "services_block": "10000-10099",
                 "internal_block": "20000-20099",
-                "external_block": "30000-30099"
+                "external_block": "30000-30099",
             },
             "available_ports": {
                 "8000": "Alternative API",
@@ -100,8 +86,8 @@ class Config:
                 "8006": "LLM Alt",
                 "8007": "Benchmark Alt",
                 "8008": "Agent Alt",
-                "8009": "Dashboard Alt"
-            }
+                "8009": "Dashboard Alt",
+            },
         }
 
     def get_port(self, service: str) -> int:
@@ -124,7 +110,7 @@ class Config:
     def save(self):
         """Save configuration to file."""
         self.config_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.config_path, 'w') as f:
+        with open(self.config_path, "w") as f:
             json.dump(self.config, f, indent=2)
 
     def get(self, *keys) -> Any:

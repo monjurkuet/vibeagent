@@ -1,13 +1,12 @@
 """Enhanced error feedback system for VibeAgent."""
 
-import json
 import hashlib
+import json
 import logging
-import time
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+from typing import Any
 
 from .database_manager import DatabaseManager
 
@@ -71,11 +70,11 @@ class ErrorContext:
     """Rich error context."""
 
     tool_name: str
-    parameters: Dict[str, Any]
+    parameters: dict[str, Any]
     attempt_number: int
-    previous_attempts: List[Dict[str, Any]] = field(default_factory=list)
-    similar_errors: List[Dict[str, Any]] = field(default_factory=list)
-    successful_patterns: List[Dict[str, Any]] = field(default_factory=list)
+    previous_attempts: list[dict[str, Any]] = field(default_factory=list)
+    similar_errors: list[dict[str, Any]] = field(default_factory=list)
+    successful_patterns: list[dict[str, Any]] = field(default_factory=list)
     timestamp: datetime = field(default_factory=datetime.now)
 
 
@@ -85,8 +84,8 @@ class RecoverySuggestion:
 
     strategy: RecoveryStrategy
     description: str
-    parameter_modifications: Dict[str, Any] = field(default_factory=dict)
-    alternative_tools: List[str] = field(default_factory=list)
+    parameter_modifications: dict[str, Any] = field(default_factory=dict)
+    alternative_tools: list[str] = field(default_factory=list)
     estimated_success_rate: float = 0.0
     confidence: float = 0.0
 
@@ -98,7 +97,7 @@ class ErrorPattern:
     fingerprint: str
     error_type: ErrorType
     pattern_key: str
-    recovery_strategies: Dict[str, float]
+    recovery_strategies: dict[str, float]
     total_occurrences: int
     successful_recoveries: int
     last_seen: datetime
@@ -165,7 +164,7 @@ class ErrorClassifier:
     }
 
     def classify(
-        self, error: Exception, context: Optional[ErrorContext] = None
+        self, error: Exception, context: ErrorContext | None = None
     ) -> ErrorClassification:
         """Classify an error.
 
@@ -205,14 +204,11 @@ class ErrorClassifier:
             )
 
         confidence = min(
-            best_score
-            / len(self.ERROR_PATTERNS.get(best_match[0].value, {}).get("keywords", [])),
+            best_score / len(self.ERROR_PATTERNS.get(best_match[0].value, {}).get("keywords", [])),
             1.0,
         )
 
-        description = (
-            f"Error classified as {best_match[0].value} with {best_match[1]} severity"
-        )
+        description = f"Error classified as {best_match[0].value} with {best_match[1]} severity"
 
         return ErrorClassification(
             error_type=best_match[0],
@@ -226,7 +222,7 @@ class ErrorClassifier:
 class ErrorPatternDatabase:
     """Database for storing and learning from error patterns."""
 
-    def __init__(self, db_manager: Optional[DatabaseManager] = None):
+    def __init__(self, db_manager: DatabaseManager | None = None):
         """Initialize pattern database.
 
         Args:
@@ -234,7 +230,7 @@ class ErrorPatternDatabase:
         """
         self.db_manager = db_manager
         self._initialize_tables()
-        self._memory_patterns: Dict[str, ErrorPattern] = {}
+        self._memory_patterns: dict[str, ErrorPattern] = {}
 
     def _initialize_tables(self):
         """Initialize database tables for error patterns."""
@@ -245,7 +241,8 @@ class ErrorPatternDatabase:
             with self.db_manager.get_connection() as conn:
                 cursor = conn.cursor()
 
-                cursor.execute("""
+                cursor.execute(
+                    """
                     CREATE TABLE IF NOT EXISTS error_patterns (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         fingerprint TEXT UNIQUE NOT NULL,
@@ -257,23 +254,28 @@ class ErrorPatternDatabase:
                         last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
-                """)
+                """
+                )
 
-                cursor.execute("""
-                    CREATE INDEX IF NOT EXISTS idx_error_patterns_fingerprint 
+                cursor.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_error_patterns_fingerprint
                     ON error_patterns(fingerprint)
-                """)
+                """
+                )
 
-                cursor.execute("""
-                    CREATE INDEX IF NOT EXISTS idx_error_patterns_type 
+                cursor.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_error_patterns_type
                     ON error_patterns(error_type)
-                """)
+                """
+                )
 
                 logger.info("Error pattern database tables initialized")
         except Exception as e:
             logger.error(f"Failed to initialize error pattern tables: {e}")
 
-    def get_pattern(self, fingerprint: str) -> Optional[ErrorPattern]:
+    def get_pattern(self, fingerprint: str) -> ErrorPattern | None:
         """Get error pattern by fingerprint.
 
         Args:
@@ -345,8 +347,7 @@ class ErrorPatternDatabase:
                 if recovery_strategy not in pattern.recovery_strategies:
                     pattern.recovery_strategies[recovery_strategy] = 0.0
                 pattern.recovery_strategies[recovery_strategy] = (
-                    pattern.recovery_strategies[recovery_strategy]
-                    + (1.0 if success else 0.0)
+                    pattern.recovery_strategies[recovery_strategy] + (1.0 if success else 0.0)
                 ) / pattern.total_occurrences
             else:
                 self._memory_patterns[fingerprint] = ErrorPattern(
@@ -378,15 +379,12 @@ class ErrorPatternDatabase:
                 if row:
                     recovery_strategies = json.loads(row["recovery_strategies"])
                     total_occurrences = row["total_occurrences"] + 1
-                    successful_recoveries = row["successful_recoveries"] + (
-                        1 if success else 0
-                    )
+                    successful_recoveries = row["successful_recoveries"] + (1 if success else 0)
 
                     if recovery_strategy not in recovery_strategies:
                         recovery_strategies[recovery_strategy] = 0.0
                     recovery_strategies[recovery_strategy] = (
-                        recovery_strategies[recovery_strategy]
-                        + (1.0 if success else 0.0)
+                        recovery_strategies[recovery_strategy] + (1.0 if success else 0.0)
                     ) / total_occurrences
 
                     cursor.execute(
@@ -426,9 +424,7 @@ class ErrorPatternDatabase:
         except Exception as e:
             logger.error(f"Failed to update error pattern: {e}")
 
-    def get_similar_patterns(
-        self, error_type: ErrorType, limit: int = 5
-    ) -> List[ErrorPattern]:
+    def get_similar_patterns(self, error_type: ErrorType, limit: int = 5) -> list[ErrorPattern]:
         """Get similar error patterns by type.
 
         Args:
@@ -439,9 +435,7 @@ class ErrorPatternDatabase:
             List of similar ErrorPattern objects
         """
         if not self.db_manager:
-            return [
-                p for p in self._memory_patterns.values() if p.error_type == error_type
-            ][:limit]
+            return [p for p in self._memory_patterns.values() if p.error_type == error_type][:limit]
 
         try:
             with self.db_manager.get_connection() as conn:
@@ -480,7 +474,7 @@ class ErrorPatternDatabase:
 class ErrorHandler:
     """Enhanced error handling system with classification and recovery."""
 
-    def __init__(self, db_manager: Optional[DatabaseManager] = None):
+    def __init__(self, db_manager: DatabaseManager | None = None):
         """Initialize error handler.
 
         Args:
@@ -510,9 +504,9 @@ class ErrorHandler:
     def build_error_context(
         self,
         tool_name: str,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         attempt_number: int = 1,
-        previous_attempts: Optional[List[Dict[str, Any]]] = None,
+        previous_attempts: list[dict[str, Any]] | None = None,
     ) -> ErrorContext:
         """Build rich error context.
 
@@ -539,8 +533,8 @@ class ErrorHandler:
         return context
 
     def _find_similar_errors(
-        self, tool_name: str, parameters: Dict[str, Any], limit: int = 3
-    ) -> List[Dict[str, Any]]:
+        self, tool_name: str, parameters: dict[str, Any], limit: int = 3
+    ) -> list[dict[str, Any]]:
         """Find similar historical errors.
 
         Args:
@@ -590,9 +584,7 @@ class ErrorHandler:
         Returns:
             Formatted error message for LLM
         """
-        recovery_suggestions = self.get_recovery_strategy(
-            classification.error_type, context
-        )
+        recovery_suggestions = self.get_recovery_strategy(classification.error_type, context)
 
         message = f"""Error Information:
 - Type: {classification.error_type.value}
@@ -668,13 +660,9 @@ Context:
             ],
         }
 
-        return "\n".join(
-            f"- {cause}" for cause in causes.get(error_type, ["Unknown cause"])
-        )
+        return "\n".join(f"- {cause}" for cause in causes.get(error_type, ["Unknown cause"]))
 
-    def _format_recovery_suggestions(
-        self, suggestions: List[RecoverySuggestion]
-    ) -> str:
+    def _format_recovery_suggestions(self, suggestions: list[RecoverySuggestion]) -> str:
         """Format recovery suggestions.
 
         Args:
@@ -694,15 +682,11 @@ Context:
                     f"  Parameter changes: {json.dumps(suggestion.parameter_modifications)}"
                 )
             if suggestion.alternative_tools:
-                formatted.append(
-                    f"  Alternative tools: {', '.join(suggestion.alternative_tools)}"
-                )
+                formatted.append(f"  Alternative tools: {', '.join(suggestion.alternative_tools)}")
 
         return "\n".join(formatted)
 
-    def _get_next_steps(
-        self, classification: ErrorClassification, context: ErrorContext
-    ) -> str:
+    def _get_next_steps(self, classification: ErrorClassification, context: ErrorContext) -> str:
         """Get next steps based on classification and context.
 
         Args:
@@ -732,7 +716,7 @@ Context:
 
     def get_recovery_strategy(
         self, error_type: ErrorType, context: ErrorContext
-    ) -> List[RecoverySuggestion]:
+    ) -> list[RecoverySuggestion]:
         """Get recovery strategy suggestions.
 
         Args:
@@ -752,9 +736,7 @@ Context:
                 suggestions.append(
                     RecoverySuggestion(
                         strategy=RecoveryStrategy(strategy),
-                        description=self._get_strategy_description(
-                            RecoveryStrategy(strategy)
-                        ),
+                        description=self._get_strategy_description(RecoveryStrategy(strategy)),
                         estimated_success_rate=success_rate,
                         confidence=min(pattern.total_occurrences / 10.0, 1.0),
                     )
@@ -772,12 +754,10 @@ Context:
                     )
                 )
 
-        suggestions.sort(
-            key=lambda x: (x.estimated_success_rate * x.confidence), reverse=True
-        )
+        suggestions.sort(key=lambda x: (x.estimated_success_rate * x.confidence), reverse=True)
         return suggestions[:3]
 
-    def _get_default_strategies(self, error_type: ErrorType) -> List[RecoveryStrategy]:
+    def _get_default_strategies(self, error_type: ErrorType) -> list[RecoveryStrategy]:
         """Get default recovery strategies for error type.
 
         Args:
@@ -832,9 +812,7 @@ Context:
         }
         return descriptions.get(strategy, "Unknown strategy")
 
-    def is_retryable_error(
-        self, error: Exception, context: Optional[ErrorContext] = None
-    ) -> bool:
+    def is_retryable_error(self, error: Exception, context: ErrorContext | None = None) -> bool:
         """Check if error can be retried.
 
         Args:
@@ -870,9 +848,7 @@ Context:
         base_delay = base_delays.get(error_type, 1.0)
         return min(base_delay * (2 ** (attempt - 1)), 60.0)
 
-    def should_abort(
-        self, error: Exception, context: Optional[ErrorContext] = None
-    ) -> bool:
+    def should_abort(self, error: Exception, context: ErrorContext | None = None) -> bool:
         """Check if execution should abort.
 
         Args:
@@ -950,11 +926,11 @@ Context:
         self,
         error: Exception,
         tool_name: str,
-        parameters: Dict[str, Any],
-        session_id: Optional[int] = None,
-        tool_call_id: Optional[int] = None,
+        parameters: dict[str, Any],
+        session_id: int | None = None,
+        tool_call_id: int | None = None,
         attempt_number: int = 1,
-    ) -> Tuple[str, List[RecoverySuggestion]]:
+    ) -> tuple[str, list[RecoverySuggestion]]:
         """Handle error with full classification and recovery suggestions.
 
         Args:
@@ -972,9 +948,7 @@ Context:
         classification = self.classifier.classify(error, context)
 
         formatted_message = self.format_error_for_llm(error, classification, context)
-        recovery_suggestions = self.get_recovery_strategy(
-            classification.error_type, context
-        )
+        recovery_suggestions = self.get_recovery_strategy(classification.error_type, context)
 
         logger.warning(
             f"Error handled: {classification.error_type.value} - {classification.severity.value} - {str(error)[:100]}"

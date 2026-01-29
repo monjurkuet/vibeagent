@@ -10,24 +10,18 @@ import argparse
 import json
 import logging
 import os
-import sys
-from datetime import datetime
-from pathlib import Path
-from typing import Optional
-
 import sqlite3
+import sys
+from pathlib import Path
 
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class DatabaseInitializer:
     """Handles database initialization and seeding."""
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         """Initialize the database manager."""
         if db_path is None:
             db_path = "/home/muham/development/vibeagent/data/vibeagent.db"
@@ -41,9 +35,7 @@ class DatabaseInitializer:
             logger.info(f"Initializing database at {self.db_path}")
 
             if force and os.path.exists(self.db_path):
-                logger.warning(
-                    f"Force mode: Removing existing database at {self.db_path}"
-                )
+                logger.warning(f"Force mode: Removing existing database at {self.db_path}")
                 os.remove(self.db_path)
 
             self._create_data_directory()
@@ -83,7 +75,7 @@ class DatabaseInitializer:
 
         logger.info(f"Initializing schema from {schema_path}")
 
-        with open(schema_path, "r") as f:
+        with open(schema_path) as f:
             schema_sql = f.read()
 
         with sqlite3.connect(self.db_path) as conn:
@@ -152,8 +144,8 @@ class DatabaseInitializer:
                 try:
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO test_cases 
-                        (name, description, messages_json, tools_json, 
+                        INSERT OR REPLACE INTO test_cases
+                        (name, description, messages_json, tools_json,
                          expected_tools_json, expected_params_json, expect_no_tools, updated_at)
                         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                         """,
@@ -260,13 +252,9 @@ Return your response as valid JSON.""",
             if missing_tables:
                 raise Exception(f"Missing tables: {missing_tables}")
 
-            config_count = conn.execute(
-                "SELECT COUNT(*) FROM configurations"
-            ).fetchone()[0]
+            config_count = conn.execute("SELECT COUNT(*) FROM configurations").fetchone()[0]
             prompt_count = conn.execute("SELECT COUNT(*) FROM prompts").fetchone()[0]
-            test_case_count = conn.execute(
-                "SELECT COUNT(*) FROM test_cases"
-            ).fetchone()[0]
+            test_case_count = conn.execute("SELECT COUNT(*) FROM test_cases").fetchone()[0]
 
             logger.info("✓ Database verification passed")
             logger.info(f"  - Tables: {len(table_names)}")
@@ -295,9 +283,7 @@ def main():
         action="store_true",
         help="Skip seeding default data (configurations, test cases, prompts)",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose logging"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 

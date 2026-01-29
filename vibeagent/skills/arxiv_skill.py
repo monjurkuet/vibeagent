@@ -1,9 +1,9 @@
 """ArXiv search skill for the agent framework."""
 
-import arxiv
-from datetime import datetime, timedelta
-from typing import List, Dict, Optional
 from dataclasses import dataclass
+from datetime import datetime, timedelta
+
+import arxiv
 
 from ..core.skill import BaseSkill, SkillResult
 
@@ -14,7 +14,7 @@ class Paper:
 
     arxiv_id: str
     title: str
-    authors: List[str]
+    authors: list[str]
     published: str
     abstract: str
     url: str
@@ -27,9 +27,10 @@ class ArxivSkill(BaseSkill):
     def __init__(self):
         super().__init__("arxiv_search", "1.0.0")
         self.client = arxiv.Client()
+        self.activate()
 
     @property
-    def parameters_schema(self) -> Dict:
+    def parameters_schema(self) -> dict:
         """JSON Schema for the skill's parameters."""
         return {
             "type": "object",
@@ -48,11 +49,16 @@ class ArxivSkill(BaseSkill):
                     "items": {"type": "string"},
                     "description": "arXiv categories to filter by (e.g., cs.AI, cs.LG)",
                 },
+                "months_back": {
+                    "type": "integer",
+                    "default": 6,
+                    "description": "Number of months back to search",
+                },
             },
             "required": ["query"],
         }
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         """Get the tool schema for function calling."""
         return {
             "type": "function",
@@ -74,13 +80,11 @@ class ArxivSkill(BaseSkill):
             print(f"ArXiv validation failed: {e}")
             return False
 
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         """Return list of dependencies."""
         return ["arxiv"]
 
-    def execute(
-        self, query: str, max_results: int = 10, months_back: int = 6
-    ) -> SkillResult:
+    def execute(self, query: str, max_results: int = 10, months_back: int = 6) -> SkillResult:
         """Search arXiv for papers."""
         try:
             cutoff_date = datetime.now() - timedelta(days=months_back * 30)

@@ -1,9 +1,7 @@
 TEST_CASES = [
     {
         "name": "Simple tool call - ArXiv search",
-        "messages": [
-            {"role": "user", "content": "Search for papers about machine learning"}
-        ],
+        "messages": [{"role": "user", "content": "Search for papers about machine learning"}],
         "tools": [
             {
                 "type": "function",

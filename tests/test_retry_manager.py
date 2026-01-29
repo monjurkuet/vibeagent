@@ -1,18 +1,15 @@
 """Test suite for RetryManager."""
 
-import pytest
-import time
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
+from unittest.mock import Mock, patch
 
+import pytest
 from core.retry_manager import (
-    RetryManager,
-    RetryPolicy,
-    RetryAttempt,
-    RetryStatistics,
     BackoffStrategy,
     ErrorType,
-    retry_with_manager,
+    RetryAttempt,
+    RetryManager,
+    RetryPolicy,
 )
 from core.skill import SkillResult
 
@@ -159,19 +156,13 @@ class TestBackoffCalculation:
         """Test exponential backoff calculation."""
         retry_manager = RetryManager()
 
-        backoff_0 = retry_manager.calculate_backoff(
-            0, policy, BackoffStrategy.EXPONENTIAL
-        )
+        backoff_0 = retry_manager.calculate_backoff(0, policy, BackoffStrategy.EXPONENTIAL)
         assert backoff_0 == 1000
 
-        backoff_1 = retry_manager.calculate_backoff(
-            1, policy, BackoffStrategy.EXPONENTIAL
-        )
+        backoff_1 = retry_manager.calculate_backoff(1, policy, BackoffStrategy.EXPONENTIAL)
         assert backoff_1 == 2000
 
-        backoff_2 = retry_manager.calculate_backoff(
-            2, policy, BackoffStrategy.EXPONENTIAL
-        )
+        backoff_2 = retry_manager.calculate_backoff(2, policy, BackoffStrategy.EXPONENTIAL)
         assert backoff_2 == 4000
 
     def test_linear_backoff(self, policy):
@@ -209,9 +200,7 @@ class TestBackoffCalculation:
         )
         retry_manager = RetryManager()
 
-        backoff = retry_manager.calculate_backoff(
-            10, policy, BackoffStrategy.EXPONENTIAL
-        )
+        backoff = retry_manager.calculate_backoff(10, policy, BackoffStrategy.EXPONENTIAL)
         assert backoff == 5000
 
     def test_jitter_enabled(self):
@@ -434,9 +423,7 @@ class TestRetryPolicies:
 
     def test_add_tool_retry_rule(self, retry_manager):
         """Test adding tool-specific retry rules."""
-        retry_manager.add_tool_retry_rule(
-            "custom_tool", [ErrorType.NETWORK, ErrorType.TIMEOUT]
-        )
+        retry_manager.add_tool_retry_rule("custom_tool", [ErrorType.NETWORK, ErrorType.TIMEOUT])
 
         assert "custom_tool" in retry_manager.tool_retry_rules
         assert ErrorType.NETWORK in retry_manager.tool_retry_rules["custom_tool"]

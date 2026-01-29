@@ -1,7 +1,6 @@
 """LLM interaction skill for the agent framework."""
 
 import requests
-from typing import Dict, List, Optional
 
 from ..core.skill import BaseSkill, SkillResult
 
@@ -9,16 +8,15 @@ from ..core.skill import BaseSkill, SkillResult
 class LLMSkill(BaseSkill):
     """Skill for interacting with LLM APIs."""
 
-    def __init__(
-        self, base_url: str = "http://localhost:8087/v1", model: str = "glm-4.7"
-    ):
+    def __init__(self, base_url: str = "http://localhost:8087/v1", model: str = "glm-4.7"):
         super().__init__("llm", "1.0.0")
         self.base_url = base_url.rstrip("/")
         self.chat_url = f"{self.base_url}/chat/completions"
         self.model = model
+        self.activate()
 
     @property
-    def parameters_schema(self) -> Dict:
+    def parameters_schema(self) -> dict:
         """JSON Schema for the skill's parameters."""
         return {
             "type": "object",
@@ -36,11 +34,16 @@ class LLMSkill(BaseSkill):
                     "default": 1000,
                     "description": "Maximum number of tokens to generate",
                 },
+                "temperature": {
+                    "type": "number",
+                    "default": 0.7,
+                    "description": "Sampling temperature",
+                },
             },
             "required": ["prompt"],
         }
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         """Get the tool schema for function calling."""
         return {
             "type": "function",
@@ -56,11 +59,17 @@ class LLMSkill(BaseSkill):
         try:
             response = requests.get(f"{self.base_url}/models", timeout=5)
             return response.status_code == 200
+        except requests.exceptions.Timeout:
+            print(f"LLM validation timeout: {self.base_url}")
+            return False
+        except requests.exceptions.ConnectionError:
+            print(f"LLM connection error: {self.base_url}")
+            return False
         except Exception as e:
             print(f"LLM validation failed: {e}")
             return False
 
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         """Return list of dependencies."""
         return ["requests"]
 
@@ -106,14 +115,21 @@ class LLMSkill(BaseSkill):
                     "usage": result.get("usage", {}),
                 },
             )
-        except Exception as e:
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json() if e.response else str(e)
+            return SkillResult(success=False, error=f"LLM HTTP error: {error_detail}")
+        except requests.exceptions.Timeout:
+            return SkillResult(success=False, error="LLM request timed out")
+        except requests.exceptions.RequestException as e:
             return SkillResult(success=False, error=f"LLM request failed: {str(e)}")
+        except Exception as e:
+            return SkillResult(success=False, error=f"LLM execution error: {str(e)}")
 
     def execute_with_tools(
         self,
-        messages: List[Dict],
-        tools: Optional[List[Dict]] = None,
-        tool_choice: Optional[str] = None,
+        messages: list[dict],
+        tools: list[dict] | None = None,
+        tool_choice: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 1000,
     ) -> SkillResult:
@@ -163,7 +179,7 @@ class LLMSkill(BaseSkill):
         except Exception as e:
             return SkillResult(success=False, error=f"LLM execution error: {str(e)}")
 
-    def parse_tool_calls(self, response_data: Dict) -> List[Dict]:
+    def parse_tool_calls(self, response_data: dict) -> list[dict]:
         """Parse tool calls from LLM response data."""
         tool_calls = response_data.get("tool_calls", [])
 

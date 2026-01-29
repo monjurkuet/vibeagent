@@ -2,18 +2,18 @@
 FastAPI backend for VibeAgent Dashboard.
 """
 
-import sys
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
+from ..config import Config
+
 # Import from our package
 from ..core import Agent
 from ..core.hybrid_orchestrator import HybridOrchestrator
-from ..skills import ArxivSkill, ScraperSkill, LLMSkill, SqliteSkill
-from ..config import Config
+from ..skills import ArxivSkill, LLMSkill, ScraperSkill, SqliteSkill
 
 # Global agent instance
 agent = None
@@ -57,7 +57,7 @@ async def lifespan(app: FastAPI):
     # Initialize HybridOrchestrator if LLM skill is available
     if llm_skill and len(agent.skills) > 1:
         hybrid_orchestrator = HybridOrchestrator(llm_skill, agent.skills)
-        print(f"🔧 HybridOrchestrator initialized with tool calling support")
+        print("🔧 HybridOrchestrator initialized with tool calling support")
 
     yield
 
@@ -129,6 +129,30 @@ async def health_check():
         return {"status": "healthy", "agent": agent.name, "skills": skills_info}
     return {"status": "initializing"}
 
+@app.post("/agent/self-heal")
+async def self_heal():
+    """Trigger self-healing for all skills."""
+    if not agent:
+        return {"error": "Agent not initialized"}
+    
+    agent.self_heal()
+    
+    # Return updated status
+    health = agent.health_check()
+    skills_info = []
+    for skill_name, skill in agent.skills.items():
+        skill_info = skill.get_info()
+        skill_info["healthy"] = health.get(skill_name, False)
+        skills_info.append(skill_info)
+    
+    return {
+        "success": True,
+        "message": "Self-healing completed",
+        "skills": skills_info
+    }
+
+
+
 
 @app.get("/agent/skills")
 async def get_skills():
@@ -199,8 +223,7 @@ async def process_prompt(request: dict):
 
     if result.success:
         return {"success": True, "breakdown": result.data["content"]}
-    else:
-        return {"success": False, "error": result.error}
+    return {"success": False, "error": result.error}
 
 
 @app.post("/agent/execute")
@@ -326,15 +349,16 @@ async def websocket_endpoint(websocket: WebSocket):
 def main():
     """Main entry point for the API server."""
     import uvicorn
-    
+
     # Load config for port
     try:
         from ..config import Config
+
         config = Config()
         port = config.get("api", "port", default=8000)
     except:
         port = 8000
-    
+
     print(f"🚀 Starting VibeAgent API server on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
 

@@ -11,8 +11,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from prompts import (
     build_react_prompt,
-    get_react_system_prompt,
     extract_tool_descriptions,
+    get_react_system_prompt,
 )
 
 
@@ -120,7 +120,9 @@ def example_multi_step_workflow():
     ]
 
     # Complex task requiring multiple tools
-    user_message = "Find papers about neural networks, extract their abstracts, and save them to the database"
+    user_message = (
+        "Find papers about neural networks, extract their abstracts, and save them to the database"
+    )
 
     # Build prompt with chaining examples
     messages = [{"role": "user", "content": user_message}]
@@ -138,10 +140,10 @@ def example_multi_step_workflow():
     for desc in descriptions:
         print(f"  - {desc}")
 
-    print(f"\nPrompt Structure:")
-    print(f"  - System prompt with ReAct instructions")
-    print(f"  - Few-shot examples for chaining workflows")
-    print(f"  - User task")
+    print("\nPrompt Structure:")
+    print("  - System prompt with ReAct instructions")
+    print("  - Few-shot examples for chaining workflows")
+    print("  - User task")
     print(f"Total messages: {len(react_prompt)}")
 
 
@@ -189,9 +191,7 @@ def example_error_recovery():
     print("  2. Tool returns error: 'query' parameter required")
     print("  3. Agent analyzes error and asks user for clarification")
     print("  4. Agent waits for user response before proceeding")
-    print(
-        f"\nPrompt includes {len(react_prompt)} messages with error recovery examples"
-    )
+    print(f"\nPrompt includes {len(react_prompt)} messages with error recovery examples")
 
 
 def example_parallel_execution():
@@ -219,7 +219,9 @@ def example_parallel_execution():
     ]
 
     # Task requiring independent searches
-    user_message = "Search for papers about reinforcement learning and computer vision simultaneously"
+    user_message = (
+        "Search for papers about reinforcement learning and computer vision simultaneously"
+    )
 
     # Build prompt with parallel examples
     messages = [{"role": "user", "content": user_message}]
@@ -239,9 +241,7 @@ def example_parallel_execution():
     print("  4. Action: arxiv_search with 'computer vision'")
     print("  5. Observation: Receive results from both searches")
     print("  6. Final Answer: Combine and present results")
-    print(
-        f"\nPrompt includes {len(react_prompt)} messages with parallel execution examples"
-    )
+    print(f"\nPrompt includes {len(react_prompt)} messages with parallel execution examples")
 
 
 def example_model_comparison():
@@ -282,7 +282,7 @@ def example_model_comparison():
 
         print(f"{model_type.upper()}:")
         print(f"  Length: {len(prompt)} characters")
-        print(f"  Key features:")
+        print("  Key features:")
 
         if "step-by-step" in prompt:
             print("    - Step-by-step reasoning emphasis")
@@ -307,15 +307,15 @@ def example_custom_integration():
     code_example = '''
     class ReActToolOrchestrator(ToolOrchestrator):
         """Enhanced orchestrator with ReAct prompts."""
-        
+
         def __init__(self, llm_skill, skills, model_type="gpt4"):
             super().__init__(llm_skill, skills)
             self.model_type = model_type
-        
+
         def _build_enhanced_messages(self, user_message: str) -> List[Dict]:
             """Build messages with ReAct prompt."""
             base_messages = [{"role": "user", "content": user_message}]
-            
+
             return build_react_prompt(
                 messages=base_messages,
                 tools=self._tool_schemas,
@@ -323,31 +323,31 @@ def example_custom_integration():
                 include_examples=True,
                 example_categories=["simple", "chaining", "error_recovery"]
             )
-        
+
         def execute_with_tools(self, user_message: str, max_iterations: int = 10):
             """Execute with ReAct-enhanced prompts."""
             # Build enhanced prompt
             messages = self._build_enhanced_messages(user_message)
-            
+
             # Continue with standard orchestration
             iterations = 0
             tool_calls_made = 0
-            
+
             while iterations < max_iterations:
                 iterations += 1
-                
+
                 # Call LLM with enhanced prompt
                 llm_result = self._call_llm_with_tools(messages)
-                
+
                 if not llm_result.success:
                     return self._create_error_result(llm_result.error)
-                
+
                 assistant_message = llm_result.data.get("message", {})
                 messages.append(assistant_message)
-                
+
                 # Process tool calls
                 tool_calls = self.parse_tool_calls(assistant_message)
-                
+
                 if not tool_calls:
                     # Task complete
                     return self._create_success_result(
@@ -355,12 +355,12 @@ def example_custom_integration():
                         iterations,
                         tool_calls_made
                     )
-                
+
                 # Execute tools
                 for tool_call in tool_calls:
                     tool_calls_made += 1
                     tool_result = self._execute_tool(tool_call)
-                    
+
                     messages.append({
                         "tool_call_id": tool_call.get("id"),
                         "role": "tool",
@@ -370,7 +370,7 @@ def example_custom_integration():
                             "error": tool_result.error,
                         })
                     })
-            
+
             return self._create_error_result("Max iterations reached")
     '''
 

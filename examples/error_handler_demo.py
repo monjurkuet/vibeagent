@@ -5,9 +5,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.error_handler import ErrorHandler, ErrorType
 from core.database_manager import DatabaseManager
-from typing import Dict, Any
+from core.error_handler import ErrorHandler
 
 
 class DemoErrorHandler:
@@ -90,7 +89,7 @@ class DemoErrorHandler:
             suggestions = self.error_handler.get_recovery_strategy(error_type, context)
 
             print(f"\nError Type: {error_type.value}")
-            print(f"  Suggestions:")
+            print("  Suggestions:")
             for i, suggestion in enumerate(suggestions, 1):
                 print(f"    {i}. {suggestion.strategy.value}: {suggestion.description}")
                 print(f"       Success rate: {suggestion.estimated_success_rate:.2%}")
@@ -110,9 +109,7 @@ class DemoErrorHandler:
         )
 
         classification = self.error_handler.classifier.classify(error, context)
-        formatted = self.error_handler.format_error_for_llm(
-            error, classification, context
-        )
+        formatted = self.error_handler.format_error_for_llm(error, classification, context)
 
         print(f"\n{formatted}")
 
@@ -151,8 +148,6 @@ class DemoErrorHandler:
         print("DEMO: Pattern Learning")
         print("=" * 60)
 
-        from core.error_handler import ErrorType
-
         fingerprint = "test_pattern_123"
         context = self.error_handler.build_error_context(
             tool_name="arxiv_search",
@@ -176,11 +171,11 @@ class DemoErrorHandler:
 
         pattern = self.error_handler.pattern_db.get_pattern(fingerprint)
         if pattern:
-            print(f"\nPattern learned:")
+            print("\nPattern learned:")
             print(f"  Total occurrences: {pattern.total_occurrences}")
             print(f"  Successful recoveries: {pattern.successful_recoveries}")
             print(f"  Success rate: {pattern.success_rate:.1f}%")
-            print(f"  Recovery strategies:")
+            print("  Recovery strategies:")
             for strategy, rate in pattern.recovery_strategies.items():
                 print(f"    {strategy}: {rate:.2%}")
 
@@ -202,7 +197,7 @@ class DemoErrorHandler:
         )
 
         print(f"\nFormatted error message:\n{formatted_message}")
-        print(f"\nRecovery suggestions:")
+        print("\nRecovery suggestions:")
         for i, suggestion in enumerate(suggestions, 1):
             print(f"  {i}. {suggestion.strategy.value}: {suggestion.description}")
 

@@ -1,19 +1,17 @@
 """SQLite storage skill for the agent framework."""
 
-import sqlite3
 import json
 import os
-from typing import List, Dict, Optional, Any
+import sqlite3
+from typing import Any
 
 from ..core.skill import BaseSkill, SkillResult
 
 
 class SqliteSkill(BaseSkill):
-    """Skill for storing data in SQLite."""
+    """Skill for storing and querying data in SQLite."""
 
-    def __init__(
-        self, db_path: str = "/home/muham/development/vibeagent/data/vibeagent.db"
-    ):
+    def __init__(self, db_path: str = "/home/muham/development/vibeagent/data/vibeagent.db"):
         super().__init__("sqlite", "1.0.0")
         self.db_path = db_path
         self._ensure_db_directory()
@@ -21,14 +19,14 @@ class SqliteSkill(BaseSkill):
         self.activate()
 
     @property
-    def parameters_schema(self) -> Dict:
+    def parameters_schema(self) -> dict:
         """JSON Schema for the skill's parameters."""
         return {
             "type": "object",
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["save_paper", "get_paper", "list_papers"],
+                    "enum": ["save_paper", "get_paper", "list_papers", "query"],
                     "description": "Action to perform on the database",
                 },
                 "arxiv_id": {
@@ -49,17 +47,30 @@ class SqliteSkill(BaseSkill):
                         "topics": {"type": "array", "items": {"type": "string"}},
                     },
                 },
+                "query": {
+                    "type": "string",
+                    "description": "SQL query to execute (required for action=query)",
+                },
+                "topic": {
+                    "type": "string",
+                    "description": "Filter papers by topic (for list_papers)",
+                },
+                "limit": {
+                    "type": "integer",
+                    "default": 50,
+                    "description": "Limit results (for list_papers and query)",
+                },
             },
             "required": ["action"],
         }
 
-    def get_tool_schema(self) -> Dict:
+    def get_tool_schema(self) -> dict:
         """Get the tool schema for function calling."""
         return {
             "type": "function",
             "function": {
                 "name": self.name,
-                "description": "Store and retrieve papers from SQLite database",
+                "description": "Store, retrieve, and query papers from SQLite database",
                 "parameters": self.parameters_schema,
             },
         }
@@ -72,34 +83,40 @@ class SqliteSkill(BaseSkill):
 
     def _init_db(self):
         """Initialize the database and create tables if they don't exist."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS papers (
-                    arxiv_id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    authors TEXT NOT NULL,
-                    published TEXT,
-                    abstract TEXT,
-                    summary TEXT,
-                    url TEXT,
-                    pdf_url TEXT,
-                    topics TEXT NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        try:
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
+                conn.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS papers (
+                        arxiv_id TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        authors TEXT NOT NULL,
+                        published TEXT,
+                        abstract TEXT,
+                        summary TEXT,
+                        url TEXT,
+                        pdf_url TEXT,
+                        topics TEXT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """
                 )
-            """)
-            conn.commit()
+                conn.commit()
+        except Exception as e:
+            print(f"SQLite initialization error: {e}")
+            raise
 
     def validate(self) -> bool:
         """Validate the skill configuration."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                conn.execute("SELECT 1 FROM papers LIMIT 1")
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
+                conn.execute("SELECT 1 FROM sqlite_master LIMIT 1")
             return True
         except Exception as e:
             print(f"SQLite validation failed: {e}")
             return False
 
-    def get_dependencies(self) -> List[str]:
+    def get_dependencies(self) -> list[str]:
         """Return list of dependencies."""
         return []
 
@@ -108,12 +125,15 @@ class SqliteSkill(BaseSkill):
         action = kwargs.pop("action", None)
         if not action:
             return SkillResult(success=False, error="No action specified")
+        
         if action == "save_paper":
             return self._save_paper(**kwargs)
         elif action == "get_paper":
             return self._get_paper(**kwargs)
         elif action == "list_papers":
             return self._list_papers(**kwargs)
+        elif action == "query":
+            return self._execute_query(**kwargs)
         else:
             return SkillResult(success=False, error=f"Unknown action: {action}")
 
@@ -121,17 +141,17 @@ class SqliteSkill(BaseSkill):
         self,
         arxiv_id: str,
         title: str,
-        authors: List[str],
+        authors: list[str],
         published: str,
         abstract: str,
         summary: str,
         url: str,
         pdf_url: str,
-        topics: List[str],
+        topics: list[str],
     ) -> SkillResult:
         """Save a paper to SQLite."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
                 existing = conn.execute(
                     "SELECT arxiv_id FROM papers WHERE arxiv_id = ?", (arxiv_id,)
                 ).fetchone()
@@ -183,7 +203,7 @@ class SqliteSkill(BaseSkill):
     def _get_paper(self, arxiv_id: str) -> SkillResult:
         """Get a paper by arXiv ID."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
                 row = conn.execute(
                     "SELECT * FROM papers WHERE arxiv_id = ?", (arxiv_id,)
                 ).fetchone()
@@ -201,7 +221,7 @@ class SqliteSkill(BaseSkill):
                     "topics",
                     "created_at",
                 ]
-                paper = dict(zip(columns, row))
+                paper = dict(zip(columns, row, strict=False))
                 paper["authors"] = json.loads(paper["authors"])
                 paper["topics"] = json.loads(paper["topics"])
                 return SkillResult(success=True, data=paper)
@@ -209,10 +229,10 @@ class SqliteSkill(BaseSkill):
         except Exception as e:
             return SkillResult(success=False, error=f"Failed to get paper: {str(e)}")
 
-    def _list_papers(self, topic: Optional[str] = None, limit: int = 50) -> SkillResult:
+    def _list_papers(self, topic: str | None = None, limit: int = 50) -> SkillResult:
         """List papers, optionally filtered by topic."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
                 if topic:
                     cursor = conn.execute(
                         """
@@ -248,7 +268,7 @@ class SqliteSkill(BaseSkill):
                 ]
                 papers = []
                 for row in rows:
-                    paper = dict(zip(columns, row))
+                    paper = dict(zip(columns, row, strict=False))
                     paper["authors"] = json.loads(paper["authors"])
                     paper["topics"] = json.loads(paper["topics"])
                     papers.append(paper)
@@ -259,3 +279,36 @@ class SqliteSkill(BaseSkill):
             )
         except Exception as e:
             return SkillResult(success=False, error=f"Failed to list papers: {str(e)}")
+
+    def _execute_query(self, query: str, limit: int = 100) -> SkillResult:
+        """Execute a custom SQL query."""
+        try:
+            # Security check - only allow SELECT queries
+            query = query.strip()
+            if not query.upper().startswith("SELECT"):
+                return SkillResult(
+                    success=False,
+                    error="Only SELECT queries are allowed for security reasons"
+                )
+            
+            with sqlite3.connect(self.db_path, timeout=30.0) as conn:
+                # Add limit if not specified
+                if "LIMIT" not in query.upper():
+                    query = f"{query} LIMIT {limit}"
+                
+                cursor = conn.execute(query)
+                rows = cursor.fetchall()
+                columns = [description[0] for description in cursor.description]
+                
+                results = [dict(zip(columns, row, strict=False)) for row in rows]
+                
+            return SkillResult(
+                success=True,
+                data={
+                    "query": query,
+                    "results": results,
+                    "total": len(results),
+                },
+            )
+        except Exception as e:
+            return SkillResult(success=False, error=f"Query execution failed: {str(e)}")

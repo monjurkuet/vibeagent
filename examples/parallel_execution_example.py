@@ -1,17 +1,17 @@
 """Example demonstrating parallel tool execution in VibeAgent."""
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from core.database_manager import DatabaseManager
 from core.parallel_executor import (
     ParallelExecutor,
     ParallelExecutorConfig,
 )
 from core.skill import BaseSkill, SkillResult
-from core.database_manager import DatabaseManager
 
 
 class WebSearchSkill(BaseSkill):

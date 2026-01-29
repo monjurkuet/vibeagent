@@ -1,13 +1,13 @@
 """Retry management system for tool execution with intelligent backoff."""
 
-import time
-import random
 import logging
-from typing import Dict, List, Optional, Any, Callable, Set
+import random
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from functools import wraps
-from datetime import datetime
 
 from .skill import SkillResult
 
@@ -46,7 +46,7 @@ class RetryPolicy:
     jitter_enabled: bool = True
     jitter_factor: float = 0.1
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert policy to dictionary."""
         return {
             "max_retries": self.max_retries,
@@ -69,10 +69,10 @@ class RetryAttempt:
     backoff_ms: int
     timestamp: datetime
     success: bool
-    recovery_strategy: Optional[str] = None
-    metadata: Dict = field(default_factory=dict)
+    recovery_strategy: str | None = None
+    metadata: dict = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert attempt to dictionary."""
         return {
             "attempt_number": self.attempt_number,
@@ -94,11 +94,11 @@ class RetryStatistics:
     total_retries: int = 0
     successful_retries: int = 0
     failed_retries: int = 0
-    retries_by_tool: Dict[str, int] = field(default_factory=dict)
-    retries_by_error_type: Dict[str, int] = field(default_factory=dict)
+    retries_by_tool: dict[str, int] = field(default_factory=dict)
+    retries_by_error_type: dict[str, int] = field(default_factory=dict)
     retry_success_rate: float = 0.0
     avg_retries_per_success: float = 0.0
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
 
     def update(self, attempt: RetryAttempt):
         """Update statistics with a new attempt."""
@@ -109,9 +109,7 @@ class RetryStatistics:
         else:
             self.failed_retries += 1
 
-        self.retries_by_tool[attempt.tool_name] = (
-            self.retries_by_tool.get(attempt.tool_name, 0) + 1
-        )
+        self.retries_by_tool[attempt.tool_name] = self.retries_by_tool.get(attempt.tool_name, 0) + 1
         self.retries_by_error_type[attempt.error_type] = (
             self.retries_by_error_type.get(attempt.error_type, 0) + 1
         )
@@ -119,14 +117,12 @@ class RetryStatistics:
         if self.total_retries > 0:
             self.retry_success_rate = self.successful_retries / self.total_retries
             self.avg_retries_per_success = (
-                self.total_retries / self.successful_retries
-                if self.successful_retries > 0
-                else 0
+                self.total_retries / self.successful_retries if self.successful_retries > 0 else 0
             )
 
         self.last_updated = datetime.now()
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         """Convert statistics to dictionary."""
         return {
             "total_retries": self.total_retries,
@@ -136,9 +132,7 @@ class RetryStatistics:
             "retries_by_error_type": self.retries_by_error_type,
             "retry_success_rate": self.retry_success_rate,
             "avg_retries_per_success": self.avg_retries_per_success,
-            "last_updated": self.last_updated.isoformat()
-            if self.last_updated
-            else None,
+            "last_updated": self.last_updated.isoformat() if self.last_updated else None,
         }
 
 
@@ -267,9 +261,9 @@ class RetryManager:
         self.config = config
         self.global_policy = self.DEFAULT_GLOBAL_POLICY
         self.statistics = RetryStatistics()
-        self.attempt_history: List[RetryAttempt] = []
-        self.tool_retry_rules: Dict[str, Set[ErrorType]] = {}
-        self.model_retry_settings: Dict[str, RetryPolicy] = {}
+        self.attempt_history: list[RetryAttempt] = []
+        self.tool_retry_rules: dict[str, set[ErrorType]] = {}
+        self.model_retry_settings: dict[str, RetryPolicy] = {}
 
         self._load_configuration()
 
@@ -281,19 +275,11 @@ class RetryManager:
                 if "global" in retry_config:
                     self.global_policy = RetryPolicy(**retry_config["global"])
                 if "tool_policies" in retry_config:
-                    for tool_name, policy_config in retry_config[
-                        "tool_policies"
-                    ].items():
-                        self.TOOL_SPECIFIC_POLICIES[tool_name] = RetryPolicy(
-                            **policy_config
-                        )
+                    for tool_name, policy_config in retry_config["tool_policies"].items():
+                        self.TOOL_SPECIFIC_POLICIES[tool_name] = RetryPolicy(**policy_config)
                 if "model_settings" in retry_config:
-                    for model_name, policy_config in retry_config[
-                        "model_settings"
-                    ].items():
-                        self.model_retry_settings[model_name] = RetryPolicy(
-                            **policy_config
-                        )
+                    for model_name, policy_config in retry_config["model_settings"].items():
+                        self.model_retry_settings[model_name] = RetryPolicy(**policy_config)
 
     def classify_error(self, error: Exception, tool_name: str = "") -> ErrorType:
         """Classify an error into an ErrorType.
@@ -344,7 +330,7 @@ class RetryManager:
         return False
 
     def get_retry_policy(
-        self, tool_name: str = "", error_type: Optional[ErrorType] = None
+        self, tool_name: str = "", error_type: ErrorType | None = None
     ) -> RetryPolicy:
         """Get the retry policy for a specific tool and error type.
 
@@ -361,8 +347,7 @@ class RetryManager:
             if (
                 error_type
                 and error_type in self.ERROR_TYPE_POLICIES
-                and tool_policy.max_retries
-                < self.ERROR_TYPE_POLICIES[error_type].max_retries
+                and tool_policy.max_retries < self.ERROR_TYPE_POLICIES[error_type].max_retries
             ):
                 return self.ERROR_TYPE_POLICIES[error_type]
 
@@ -377,7 +362,7 @@ class RetryManager:
         self,
         attempt: int,
         policy: RetryPolicy,
-        strategy: Optional[BackoffStrategy] = None,
+        strategy: BackoffStrategy | None = None,
     ) -> int:
         """Calculate backoff delay before retry.
 
@@ -412,8 +397,8 @@ class RetryManager:
         func: Callable,
         tool_name: str = "",
         *args,
-        session_id: Optional[int] = None,
-        tool_call_id: Optional[int] = None,
+        session_id: int | None = None,
+        tool_call_id: int | None = None,
         **kwargs,
     ) -> SkillResult:
         """Execute a function with retry logic.
@@ -475,18 +460,14 @@ class RetryManager:
                 last_result = SkillResult(success=False, error=str(e))
 
             if not self.is_retryable(last_error, tool_name):
-                logger.debug(
-                    f"Error not retryable for tool '{tool_name}': {last_error}"
-                )
+                logger.debug(f"Error not retryable for tool '{tool_name}': {last_error}")
                 break
 
             error_type = self.classify_error(last_error, tool_name)
             policy = self.get_retry_policy(tool_name, error_type)
 
             if attempt_num >= policy.max_retries:
-                logger.debug(
-                    f"Max retries ({policy.max_retries}) reached for tool '{tool_name}'"
-                )
+                logger.debug(f"Max retries ({policy.max_retries}) reached for tool '{tool_name}'")
                 break
 
             backoff_ms = self.calculate_backoff(attempt_num, policy)
@@ -540,16 +521,14 @@ class RetryManager:
                 last_result,
             )
 
-        return last_result or SkillResult(
-            success=False, error="All retry attempts failed"
-        )
+        return last_result or SkillResult(success=False, error="All retry attempts failed")
 
     def _track_retry_success(
         self,
         attempt_num: int,
         tool_name: str,
-        session_id: Optional[int],
-        tool_call_id: Optional[int],
+        session_id: int | None,
+        tool_call_id: int | None,
         result: SkillResult,
     ):
         """Track a successful retry."""
@@ -566,8 +545,8 @@ class RetryManager:
         self,
         attempt_num: int,
         tool_name: str,
-        session_id: Optional[int],
-        tool_call_id: Optional[int],
+        session_id: int | None,
+        tool_call_id: int | None,
         result: SkillResult,
     ):
         """Track a failed retry attempt."""
@@ -582,7 +561,7 @@ class RetryManager:
             except Exception as e:
                 logger.error(f"Failed to update tool call retry count: {e}")
 
-    def add_tool_retry_rule(self, tool_name: str, error_types: List[ErrorType]):
+    def add_tool_retry_rule(self, tool_name: str, error_types: list[ErrorType]):
         """Add a tool-specific retry rule.
 
         Args:
@@ -611,7 +590,7 @@ class RetryManager:
         """
         return self.model_retry_settings.get(model, self.global_policy)
 
-    def get_statistics(self) -> Dict:
+    def get_statistics(self) -> dict:
         """Get retry statistics.
 
         Returns:
@@ -619,9 +598,7 @@ class RetryManager:
         """
         return self.statistics.to_dict()
 
-    def get_attempt_history(
-        self, tool_name: Optional[str] = None, limit: int = 100
-    ) -> List[Dict]:
+    def get_attempt_history(self, tool_name: str | None = None, limit: int = 100) -> list[dict]:
         """Get retry attempt history.
 
         Args:
@@ -645,7 +622,7 @@ class RetryManager:
         self.statistics = RetryStatistics()
         self.attempt_history.clear()
 
-    def calculate_optimal_retry_limits(self) -> Dict[str, int]:
+    def calculate_optimal_retry_limits(self) -> dict[str, int]:
         """Calculate optimal retry limits based on statistics.
 
         Returns:
@@ -676,7 +653,7 @@ class RetryManager:
             return 0.0
         return (self.statistics.successful_retries / total) * 100
 
-    def retry_decorator(self, tool_name: str = "", session_id: Optional[int] = None):
+    def retry_decorator(self, tool_name: str = "", session_id: int | None = None):
         """Decorator to add retry logic to a function.
 
         Args:
@@ -706,7 +683,7 @@ class RetryManager:
 def retry_with_manager(
     retry_manager: RetryManager,
     tool_name: str = "",
-    session_id: Optional[int] = None,
+    session_id: int | None = None,
 ):
     """Convenience function to create a retry decorator.
 

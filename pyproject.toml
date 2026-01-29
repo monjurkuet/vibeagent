@@ -29,59 +29,52 @@ classifiers = [
 dependencies = [
     # Web Framework
     "fastapi>=0.115.0,<1.0.0",
-    "uvicorn[standard]>=0.32.0,<1.0.0",
+    "uvicorn>=0.32.0,<1.0.0",
     "python-multipart>=0.0.12,<1.0.0",
-    "websockets>=14.0,<15.0",
-    
     # Data Validation
     "pydantic>=2.10.0,<3.0.0",
     "pydantic-settings>=2.6.0,<3.0.0",
-    
     # HTTP Client
     "requests>=2.32.0,<3.0.0",
-    
     # arXiv Integration
     "arxiv>=2.4.0,<3.0.0",
-    
     # Web Scraping
     "beautifulsoup4>=4.12.0,<5.0.0",
-    
     # Database
     "sqlalchemy>=2.0.0,<3.0.0",
     "alembic>=1.13.0,<2.0.0",
     "psycopg2-binary>=2.9.0,<3.0.0",
-    
+    "pysqlite3-binary>=0.5.0,<1.0.0",
     # Configuration
     "pyyaml>=6.0,<7.0.0",
-    
     # Documentation
     "docstring-parser>=0.15,<1.0.0",
-    
     # CLI
     "typer>=0.9.0,<1.0.0",
     "rich>=13.0.0,<14.0.0",
+    "structlog>=25.5.0",
+    "prometheus-client>=0.24.1",
 ]
 
 [project.optional-dependencies]
 dev = [
     # Testing
     "pytest>=7.4.0,<9.0.0",
-    "pytest-asyncio>=0.21.0,<1.0.0",
     "pytest-mock>=3.11.0,<4.0.0",
     "pytest-cov>=4.1.0,<5.0.0",
     "httpx>=0.25.0,<1.0.0",
-    
+
     # Code Quality
     "ruff>=0.1.0,<1.0.0",
     "mypy>=1.7.0,<2.0.0",
     "black>=24.0.0,<25.0.0",
     "pre-commit>=3.5.0,<4.0.0",
-    
+
     # Documentation
     "mkdocs>=1.5.0,<2.0.0",
     "mkdocs-material>=9.0.0,<10.0.0",
     "mkdocstrings[python]>=0.23.0,<1.0.0",
-    
+
     # Profiling
     "line-profiler>=4.1.0,<5.0.0",
     "memory-profiler>=0.60.0,<1.0.0",
@@ -95,7 +88,6 @@ lint = [
 
 test = [
     "pytest>=7.4.0,<9.0.0",
-    "pytest-asyncio>=0.21.0,<1.0.0",
     "pytest-mock>=3.11.0,<4.0.0",
     "pytest-cov>=4.1.0,<5.0.0",
     "httpx>=0.25.0,<1.0.0",
@@ -172,6 +164,7 @@ select = [
     "LOG",# flake8-logging
 ]
 ignore = [
+    "ISC001", # Conflicts with formatter
     "ANN101", # Missing type annotation for self in method
     "ANN102", # Missing type annotation for cls in method
     "E501",   # Line too long (handled by ruff formatter)
@@ -235,7 +228,6 @@ markers = [
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
 ]
-asyncio_mode = "auto"
 
 [tool.coverage.run]
 source = ["vibeagent"]
@@ -262,16 +254,16 @@ exclude_lines = [
 [tool.black]
 target-version = ['py310']
 line-length = 100
-include = '\.pyi?$'
+include = '\\.pyi?$'
 extend-exclude = '''
 /(
   # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
+  \\.eggs
+  | \\.git
+  | \\.hg
+  | \\.mypy_cache
+  | \\.tox
+  | \\.venv
   | build
   | dist
 )/

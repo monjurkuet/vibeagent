@@ -5,8 +5,9 @@ Example usage of LLMToolCallingTester with DatabaseManager integration.
 This script demonstrates how to use the enhanced test tracking capabilities.
 """
 
-from tests.llm_tool_calling_tester import LLMToolCallingTester
 from core.database_manager import DatabaseManager
+
+from tests.llm_tool_calling_tester import LLMToolCallingTester
 
 # Initialize database manager (optional)
 db_manager = DatabaseManager(db_path="data/vibeagent.db")
@@ -34,17 +35,13 @@ test_cases = [
                     "description": "Get current weather for a location",
                     "parameters": {
                         "type": "object",
-                        "properties": {
-                            "location": {"type": "string", "description": "City name"}
-                        },
+                        "properties": {"location": {"type": "string", "description": "City name"}},
                         "required": ["location"],
                     },
                 },
             }
         ],
-        "expected_tools": [
-            {"name": "get_weather", "parameters": {"location": "New York"}}
-        ],
+        "expected_tools": [{"name": "get_weather", "parameters": {"location": "New York"}}],
     }
 ]
 

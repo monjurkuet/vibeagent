@@ -1,1 +1,21 @@
-{"name": "vibeagent-frontend", "version": "1.0.0", "description": "VibeAgent Dashboard Frontend", "scripts": {"start": "python -m http.server 3000"}, "keywords": ["vibeagent", "dashboard"], "author": "", "license": "ISC"}
+{
+  "name": "vibeagent-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for VibeAgent - Brutalist Design Dashboard",
+  "scripts": {
+    "dev": "python -m http.server 8080",
+    "build": "echo 'Build complete'",
+    "deploy": "echo 'Deployment script here'"
+  },
+  "devDependencies": {
+    "alpinejs": "^3.15.5",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18"
+  },
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
