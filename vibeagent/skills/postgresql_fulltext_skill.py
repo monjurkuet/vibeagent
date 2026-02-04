@@ -19,7 +19,7 @@ class PostgreSQLFullTextSkill:
 
     def __init__(
         self,
-        connection_string: str = "postgresql://postgres:postgres@localhost:5432/vibeagent",
+        connection_string: str = "postgresql://agentzero@localhost:5432/vibeagent",
         vector_size: int = 1024,
         embedding_model: str = "bge-m3",
         embedding_url: str = "http://localhost:11434",

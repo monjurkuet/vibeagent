@@ -31,9 +31,9 @@ def main():
 
     # Try different PostgreSQL connection strings
     connection_strings = [
+        "postgresql://agentzero@localhost:5432/vibeagent",
         "postgresql://postgres@localhost:5432/postgres",
         "postgresql://postgres:postgres@localhost:5432/postgres",
-        "postgresql://postgres:postgres@localhost:5432/vibeagent",
     ]
 
     # Initialize LLM
