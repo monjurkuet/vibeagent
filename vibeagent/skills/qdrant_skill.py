@@ -33,9 +33,11 @@ class QdrantSkill(BaseSkill):
         url: str = "http://localhost:6333",
         api_key: str | None = None,
         collection_name: str = "knowledge_base",
-        vector_size: int = 1536,
+        vector_size: int = 1024,
         distance: str = "Cosine",
-        embedding_model: str | None = None,
+        embedding_model: str = "bge-m3",
+        embedding_url: str = "http://localhost:11434",
+        use_ollama_embeddings: bool = True,
     ):
         """Initialize Qdrant skill.
 
@@ -43,9 +45,11 @@ class QdrantSkill(BaseSkill):
             url: Qdrant server URL
             api_key: Qdrant API key (optional)
             collection_name: Default collection name
-            vector_size: Size of embedding vectors
+            vector_size: Size of embedding vectors (default 1024 for bge-m3)
             distance: Distance metric (Cosine, Euclid, Dot)
-            embedding_model: Name of embedding model to use
+            embedding_model: Name of embedding model (default bge-m3)
+            embedding_url: URL for embedding API (default Ollama at localhost:11434)
+            use_ollama_embeddings: Use Ollama API for embeddings (default True)
         """
         super().__init__(
             name="qdrant",
@@ -58,6 +62,8 @@ class QdrantSkill(BaseSkill):
         self.vector_size = vector_size
         self.distance = distance
         self.embedding_model = embedding_model
+        self.embedding_url = embedding_url.rstrip("/")
+        self.use_ollama_embeddings = use_ollama_embeddings
         self._client = None
         self._embedding_model = None
 
@@ -202,6 +208,29 @@ class QdrantSkill(BaseSkill):
         Returns:
             Embedding vector
         """
+        if self.use_ollama_embeddings:
+            # Use Ollama API for embeddings
+            try:
+                import requests
+
+                response = requests.post(
+                    f"{self.embedding_url}/api/embeddings",
+                    json={
+                        "model": self.embedding_model,
+                        "prompt": text,
+                    },
+                    timeout=30,
+                )
+                response.raise_for_status()
+                result = response.json()
+                embedding = result.get("embedding", [])
+                logger.info(f"Generated embedding using Ollama: {self.embedding_model}")
+                return embedding
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Ollama embedding error: {e}")
+                # Fallback to sentence_transformers
+                logger.info("Falling back to sentence_transformers")
+        # Use sentence_transformers
         model = self._get_embedding_model()
         return model.encode(text, convert_to_numpy=False).tolist()
 

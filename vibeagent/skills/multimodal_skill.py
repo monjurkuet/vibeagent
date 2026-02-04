@@ -37,6 +37,8 @@ class MultiModalSkill(BaseSkill):
         embedding_model: str | None = None,
         max_image_size: int = 10 * 1024 * 1024,  # 10MB
         max_video_size: int = 100 * 1024 * 1024,  # 100MB
+        vision_model: str = "qwen3-vl-plus",
+        vision_api_url: str = "http://localhost:8087/v1",
     ):
         """Initialize Multi-modal skill.
 
@@ -44,6 +46,8 @@ class MultiModalSkill(BaseSkill):
             embedding_model: Model name for embeddings
             max_image_size: Maximum image size in bytes
             max_video_size: Maximum video size in bytes
+            vision_model: Vision model for image analysis (qwen3-vl-plus)
+            vision_api_url: Base URL for vision model API
         """
         super().__init__(
             name="multimodal",
@@ -53,6 +57,9 @@ class MultiModalSkill(BaseSkill):
         self.embedding_model = embedding_model
         self.max_image_size = max_image_size
         self.max_video_size = max_video_size
+        self.vision_model = vision_model
+        self.vision_api_url = vision_api_url.rstrip("/")
+        self.vision_chat_url = f"{self.vision_api_url}/chat/completions"
         self._image_embedding_model = None
         self._text_embedding_model = None
 
@@ -129,7 +136,7 @@ class MultiModalSkill(BaseSkill):
         """Execute Multi-modal skill.
 
         Args:
-            action: Action to perform (process, extract_text, generate_caption)
+            action: Action to perform (process, extract_text, generate_caption, analyze)
             content_type: Type of content (image, video, code, text)
             content: Content data
             file_path: Path to file
@@ -144,6 +151,8 @@ class MultiModalSkill(BaseSkill):
             return self._extract_text_from_image(content, file_path, **kwargs)
         elif action == "generate_caption":
             return self._generate_caption(content, file_path, **kwargs)
+        elif action == "analyze":
+            return self._analyze_image(content, file_path, **kwargs)
         elif action == "process_code":
             return self._process_code(content, file_path, metadata, **kwargs)
         else:
@@ -483,26 +492,170 @@ class MultiModalSkill(BaseSkill):
         file_path: str | None,
         **kwargs,
     ) -> SkillResult:
-        """Generate caption for image.
+        """Generate caption for image using qwen3-vl-plus vision model.
 
         Args:
-            content: Image data
+            content: Image data (base64 or path)
             file_path: Path to image file
 
         Returns:
             SkillResult with caption
         """
         try:
-            # This would require a vision-language model
-            # For now, return a placeholder
+            import requests
+
+            # Load and encode image
+            if file_path:
+                with open(file_path, "rb") as f:
+                    image_data = base64.b64encode(f.read()).decode("utf-8")
+            elif content:
+                # Assume content is already base64 encoded
+                if not content.startswith("data:image"):
+                    image_data = content
+                else:
+                    # Extract base64 part from data URL
+                    image_data = content.split(",")[1]
+            else:
+                return SkillResult(success=False, error="No image content provided")
+
+            # Construct message with image for vision model
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                        {"type": "text", "text": "Describe this image in detail. What do you see?"},
+                    ],
+                }
+            ]
+
+            # Call vision model via OpenAI-compatible API
+            response = requests.post(
+                self.vision_chat_url,
+                json={
+                    "model": self.vision_model,
+                    "messages": messages,
+                    "max_tokens": 500,
+                },
+                timeout=30,
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            caption = result["choices"][0]["message"]["content"]
+
+            logger.info(f"Generated caption using {self.vision_model}")
+
             return SkillResult(
-                success=False,
-                error="Image captioning requires vision-language model",
+                success=True,
+                data={
+                    "caption": caption,
+                    "model": self.vision_model,
+                },
             )
 
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json() if e.response else str(e)
+            logger.error(f"Vision model HTTP error: {error_detail}")
+            return SkillResult(success=False, error=f"Vision model error: {error_detail}")
+        except requests.exceptions.Timeout:
+            logger.error("Vision model request timed out")
+            return SkillResult(success=False, error="Vision model request timed out")
         except Exception as e:
             logger.error(f"Error generating caption: {e}")
             return SkillResult(success=False, error=f"Caption generation failed: {str(e)}")
+
+    def _analyze_image(
+        self,
+        content: str | None,
+        file_path: str | None,
+        analysis_type: str = "general",
+        **kwargs,
+    ) -> SkillResult:
+        """Analyze image using qwen3-vl-plus vision model.
+
+        Args:
+            content: Image data (base64 or path)
+            file_path: Path to image file
+            analysis_type: Type of analysis (general, ocr, objects, scene)
+
+        Returns:
+            SkillResult with analysis results
+        """
+        try:
+            import requests
+
+            # Load and encode image
+            if file_path:
+                with open(file_path, "rb") as f:
+                    image_data = base64.b64encode(f.read()).decode("utf-8")
+            elif content:
+                # Assume content is already base64 encoded
+                if not content.startswith("data:image"):
+                    image_data = content
+                else:
+                    # Extract base64 part from data URL
+                    image_data = content.split(",")[1]
+            else:
+                return SkillResult(success=False, error="No image content provided")
+
+            # Build prompt based on analysis type
+            prompts = {
+                "general": "Analyze this image in detail. Describe the main elements, style, mood, and any notable features.",
+                "ocr": "Extract all text visible in this image. Provide the exact text content.",
+                "objects": "Identify and list all objects visible in this image. Be specific.",
+                "scene": "Describe the scene in this image. What is happening? What is the setting?",
+            }
+
+            prompt = prompts.get(analysis_type, prompts["general"])
+
+            # Construct message with image for vision model
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_data}"}},
+                        {"type": "text", "text": prompt},
+                    ],
+                }
+            ]
+
+            # Call vision model via OpenAI-compatible API
+            response = requests.post(
+                self.vision_chat_url,
+                json={
+                    "model": self.vision_model,
+                    "messages": messages,
+                    "max_tokens": 1000,
+                },
+                timeout=30,
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            analysis = result["choices"][0]["message"]["content"]
+
+            logger.info(f"Analyzed image using {self.vision_model} (type: {analysis_type})")
+
+            return SkillResult(
+                success=True,
+                data={
+                    "analysis": analysis,
+                    "analysis_type": analysis_type,
+                    "model": self.vision_model,
+                },
+            )
+
+        except requests.exceptions.HTTPError as e:
+            error_detail = e.response.json() if e.response else str(e)
+            logger.error(f"Vision model HTTP error: {error_detail}")
+            return SkillResult(success=False, error=f"Vision model error: {error_detail}")
+        except requests.exceptions.Timeout:
+            logger.error("Vision model request timed out")
+            return SkillResult(success=False, error="Vision model request timed out")
+        except Exception as e:
+            logger.error(f"Error analyzing image: {e}")
+            return SkillResult(success=False, error=f"Image analysis failed: {str(e)}")
 
     def _detect_code_language(self, file_path: str | None, code: str) -> str:
         """Detect programming language.
