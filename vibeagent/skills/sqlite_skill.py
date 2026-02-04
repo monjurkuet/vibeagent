@@ -3,7 +3,6 @@
 import json
 import os
 import sqlite3
-from typing import Any
 
 from ..core.skill import BaseSkill, SkillResult
 
@@ -125,17 +124,16 @@ class SqliteSkill(BaseSkill):
         action = kwargs.pop("action", None)
         if not action:
             return SkillResult(success=False, error="No action specified")
-        
+
         if action == "save_paper":
             return self._save_paper(**kwargs)
-        elif action == "get_paper":
+        if action == "get_paper":
             return self._get_paper(**kwargs)
-        elif action == "list_papers":
+        if action == "list_papers":
             return self._list_papers(**kwargs)
-        elif action == "query":
+        if action == "query":
             return self._execute_query(**kwargs)
-        else:
-            return SkillResult(success=False, error=f"Unknown action: {action}")
+        return SkillResult(success=False, error=f"Unknown action: {action}")
 
     def _save_paper(
         self,
@@ -287,21 +285,20 @@ class SqliteSkill(BaseSkill):
             query = query.strip()
             if not query.upper().startswith("SELECT"):
                 return SkillResult(
-                    success=False,
-                    error="Only SELECT queries are allowed for security reasons"
+                    success=False, error="Only SELECT queries are allowed for security reasons"
                 )
-            
+
             with sqlite3.connect(self.db_path, timeout=30.0) as conn:
                 # Add limit if not specified
                 if "LIMIT" not in query.upper():
                     query = f"{query} LIMIT {limit}"
-                
+
                 cursor = conn.execute(query)
                 rows = cursor.fetchall()
                 columns = [description[0] for description in cursor.description]
-                
+
                 results = [dict(zip(columns, row, strict=False)) for row in rows]
-                
+
             return SkillResult(
                 success=True,
                 data={

@@ -103,8 +103,7 @@ class ScraperSkill(BaseSkill):
             return SkillResult(success=True, data=result)
         except requests.exceptions.HTTPError as e:
             return SkillResult(
-                success=False,
-                error=f"HTTP error {e.response.status_code}: {str(e)}"
+                success=False, error=f"HTTP error {e.response.status_code}: {str(e)}"
             )
         except requests.exceptions.Timeout:
             return SkillResult(success=False, error="Request timed out")

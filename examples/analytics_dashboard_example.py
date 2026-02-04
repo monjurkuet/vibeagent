@@ -9,9 +9,9 @@ to generate comprehensive analytics reports with visualizations.
 import logging
 from pathlib import Path
 
-from core.analytics_dashboard import AnalyticsDashboard
-from core.analytics_engine import AnalyticsEngine
-from core.database_manager import DatabaseManager
+from vibeagent.core.analytics_dashboard import AnalyticsDashboard
+from vibeagent.core.analytics_engine import AnalyticsEngine
+from vibeagent.core.database_manager import DatabaseManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

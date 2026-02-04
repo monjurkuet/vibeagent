@@ -1,14 +1,13 @@
 """Example usage of RetryManager."""
 
-
-from core.database_manager import DatabaseManager
-from core.retry_manager import (
+from vibeagent.core.database_manager import DatabaseManager
+from vibeagent.core.retry_manager import (
     BackoffStrategy,
     ErrorType,
     RetryManager,
     RetryPolicy,
 )
-from core.skill import SkillResult
+from vibeagent.core.skill import SkillResult
 
 
 def example_basic_usage():
@@ -273,8 +272,7 @@ def example_attempt_history():
     print("Attempt history for 'test_tool':")
     for attempt in history:
         print(
-            f"  Attempt {attempt['attempt_number']}: "
-            f"{attempt['error_type']} - {attempt['success']}"
+            f"  Attempt {attempt['attempt_number']}: {attempt['error_type']} - {attempt['success']}"
         )
 
 

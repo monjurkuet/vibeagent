@@ -4,12 +4,7 @@ This example demonstrates how to use the TreeOfThoughtsOrchestrator
 for complex multi-step reasoning tasks.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent))
-
-from core import (
+from vibeagent.core import (
     Agent,
     DatabaseManager,
     ExplorationStrategy,
@@ -17,7 +12,7 @@ from core import (
     ToTConfig,
     TreeOfThoughtsOrchestrator,
 )
-from skills.arxiv_skill import ArxivSkill
+from vibeagent.skills.arxiv_skill import ArxivSkill
 
 
 def main():

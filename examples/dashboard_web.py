@@ -7,10 +7,11 @@ This provides a Flask-based web UI for viewing analytics data.
 
 from pathlib import Path
 
-from core.analytics_dashboard import AnalyticsDashboard
-from core.analytics_engine import AnalyticsEngine
-from core.database_manager import DatabaseManager
 from flask import Flask, jsonify, render_template_string, request
+
+from vibeagent.core.analytics_dashboard import AnalyticsDashboard
+from vibeagent.core.analytics_engine import AnalyticsEngine
+from vibeagent.core.database_manager import DatabaseManager
 
 app = Flask(__name__)
 

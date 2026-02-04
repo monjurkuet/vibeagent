@@ -1,12 +1,7 @@
 """Example demonstrating ErrorHandler integration with ToolOrchestrator."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from core.database_manager import DatabaseManager
-from core.error_handler import ErrorHandler
+from vibeagent.core.database_manager import DatabaseManager
+from vibeagent.core.error_handler import ErrorHandler
 
 
 class DemoErrorHandler:

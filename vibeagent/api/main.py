@@ -129,14 +129,15 @@ async def health_check():
         return {"status": "healthy", "agent": agent.name, "skills": skills_info}
     return {"status": "initializing"}
 
+
 @app.post("/agent/self-heal")
 async def self_heal():
     """Trigger self-healing for all skills."""
     if not agent:
         return {"error": "Agent not initialized"}
-    
+
     agent.self_heal()
-    
+
     # Return updated status
     health = agent.health_check()
     skills_info = []
@@ -144,14 +145,8 @@ async def self_heal():
         skill_info = skill.get_info()
         skill_info["healthy"] = health.get(skill_name, False)
         skills_info.append(skill_info)
-    
-    return {
-        "success": True,
-        "message": "Self-healing completed",
-        "skills": skills_info
-    }
 
-
+    return {"success": True, "message": "Self-healing completed", "skills": skills_info}
 
 
 @app.get("/agent/skills")

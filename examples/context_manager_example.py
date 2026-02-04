@@ -2,13 +2,13 @@
 
 import logging
 
-from core.context_manager import (
+from vibeagent.core.context_manager import (
     CompressionStrategy,
     ContextConfig,
     ContextManager,
     ContextType,
 )
-from core.database_manager import DatabaseManager
+from vibeagent.core.database_manager import DatabaseManager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

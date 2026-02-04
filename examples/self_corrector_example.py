@@ -1,17 +1,12 @@
 """Example demonstrating the self-correction system."""
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import logging
 
-from core.self_corrector import (
+from vibeagent.core.self_corrector import (
     SelfCorrector,
     SelfCorrectorConfig,
 )
-from core.skill import SkillResult
+from vibeagent.core.skill import SkillResult
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

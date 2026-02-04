@@ -2,12 +2,12 @@
 
 import logging
 
-from core.database_manager import DatabaseManager
-from core.plan_execute_orchestrator import (
+from vibeagent.core.database_manager import DatabaseManager
+from vibeagent.core.plan_execute_orchestrator import (
     PlanExecuteOrchestrator,
     PlanExecuteOrchestratorConfig,
 )
-from skills.llm_skill import LLMSkill
+from vibeagent.skills.llm_skill import LLMSkill
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

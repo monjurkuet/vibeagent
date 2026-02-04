@@ -4,11 +4,6 @@ This script demonstrates how to use the ReAct prompt templates
 to improve tool calling success rates in the VibeAgent system.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from prompts import (
     build_react_prompt,
     extract_tool_descriptions,

@@ -103,26 +103,32 @@ pytest tests/
 ### Code Quality
 ```bash
 # Run linters
-uv run ruff check src/vibeagent
-uv run mypy src/vibeagent
+uv run ruff check vibeagent
+uv run mypy vibeagent
 
 # Format code
-uv run ruff format src/vibeagent
+uv run ruff format vibeagent
 ```
 
 ## Project Structure
 
 ```
-├── api/                 # FastAPI backend
 ├── config/             # Configuration files
 ├── data/               # Database files
-├── docs/               # Documentation
+├── examples/           # Example usage scripts
 ├── frontend/           # Dashboard (HTML/CSS/JS)
-├── src/vibeagent/      # New modular codebase
-├── vibeagent/          # Legacy codebase (being migrated)
+├── prompts/            # ReAct prompt templates
+├── scripts/            # Database and utility scripts
 ├── tests/              # Test suite
+├── utils/              # Utility scripts
+├── vibeagent/          # Main source code
+│   ├── api/            # FastAPI backend
+│   ├── config/         # Configuration management
+│   ├── core/           # Core agent framework
+│   ├── scripts/        # Internal scripts
+│   └── skills/         # Skill implementations
 ├── requirements.txt    # Dependencies
-└── run_api.py          # API startup script
+└── pyproject.toml      # Project configuration
 ```
 
 ## Performance Improvements
