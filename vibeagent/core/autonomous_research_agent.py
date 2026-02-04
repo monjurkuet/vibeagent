@@ -144,7 +144,26 @@ Respond with valid JSON:
             if not result.success:
                 return SkillResult(success=False, error=result.error)
 
-            plan_data = json.loads(result.data.get("content", ""))
+            # Extract JSON from LLM response (handle markdown code blocks)
+            content = result.data.get("content", "")
+            
+            # Try to extract JSON from markdown code blocks
+            import re
+            json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', content, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # Try to find the first JSON object in the response
+                json_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                else:
+                    json_str = content
+            
+            # Remove any trailing comma before closing brace
+            json_str = re.sub(r',\s*}', '}', json_str)
+            
+            plan_data = json.loads(json_str)
 
             plan = ResearchPlan(
                 topic=topic,

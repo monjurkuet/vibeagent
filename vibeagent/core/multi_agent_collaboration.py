@@ -64,7 +64,7 @@ class MultiAgentCollaboration:
     def __init__(self):
         """Initialize Multi-Agent Collaboration system."""
         self.agents: dict[str, Agent] = {}
-        self.sessions: dict[str, CollaborationSession] = []
+        self.sessions: dict[str, CollaborationSession] = {}
         self.message_handlers: dict[str, Any] = {}
         logger.info("MultiAgentCollaboration initialized")
 
