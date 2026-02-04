@@ -1,6 +1,7 @@
 """Core agent framework."""
 
 from .agent import Agent
+from .autonomous_research_agent import AutonomousResearchAgent
 from .context_manager import (
     CompressionStrategy,
     ContextAnalysis,
@@ -11,6 +12,7 @@ from .context_manager import (
     ContextWindow,
     MessageScore,
 )
+from .continuous_learning_loop import ContinuousLearningLoop
 from .database_manager import DatabaseManager
 from .error_handler import (
     ErrorClassification,
@@ -24,6 +26,14 @@ from .error_handler import (
     RecoverySuggestion,
     Retryability,
     SeverityLevel,
+)
+from .hybrid_search_orchestrator import HybridSearchOrchestrator
+from .knowledge_quality_evaluator import KnowledgeQualityEvaluator
+from .multi_agent_collaboration import (
+    AgentMessage,
+    AgentTask,
+    CollaborationSession,
+    MultiAgentCollaboration,
 )
 from .plan_execute_orchestrator import (
     Plan,
@@ -59,6 +69,7 @@ from .self_corrector import (
     ErrorPattern as CorrectionErrorPattern,
 )
 from .skill import BaseSkill, SkillResult, SkillStatus
+from .temporal_knowledge_graph import TemporalKnowledgeGraph
 from .tool_orchestrator import OrchestratorResult, ToolOrchestrator
 from .tot_orchestrator import (
     ExplorationStrategy,
@@ -71,6 +82,7 @@ from .tot_orchestrator import (
 
 __all__ = [
     "Agent",
+    "AutonomousResearchAgent",
     "BaseSkill",
     "SkillResult",
     "SkillStatus",
@@ -101,6 +113,14 @@ __all__ = [
     "ContextAnalysis",
     "ContextWindow",
     "MessageScore",
+    "HybridSearchOrchestrator",
+    "KnowledgeQualityEvaluator",
+    "MultiAgentCollaboration",
+    "AgentTask",
+    "AgentMessage",
+    "CollaborationSession",
+    "ContinuousLearningLoop",
+    "TemporalKnowledgeGraph",
     "ToolOrchestrator",
     "OrchestratorResult",
     "PlanExecuteOrchestrator",
