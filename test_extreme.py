@@ -508,7 +508,8 @@ class ExtremeEdgeCaseTest:
                     "success": result.success,
                     "overall_score": result.data.get("overall_score") if result.success else None
                 })
-                print(f"  {case['name']}: score={result.data.get('overall_score') if result.success else 'N/A'}")
+                score = result.data.get("overall_score") if result.success else None
+                print(f"  {case['name']}: score={score}")
             except Exception as e:
                 results.append({"name": case["name"], "success": False, "error": str(e)})
                 print(f"  {case['name']}: Failed")
@@ -516,7 +517,7 @@ class ExtremeEdgeCaseTest:
         return {
             "total_cases": len(test_cases),
             "successful": sum(1 for r in results if r["success"]),
-            "average_score": sum(r.get("overall_score", 0) for r in results if r["success"]) / max(sum(1 for r in results if r["success"]), 1)
+            "average_score": sum(r.get("overall_score", 0) or 0 for r in results if r["success"]) / max(sum(1 for r in results if r["success"]), 1)
         }
 
     def run_all_tests(self):
