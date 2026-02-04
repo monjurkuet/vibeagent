@@ -53,7 +53,12 @@ class KnowledgeQualityEvaluator:
         """
         self.llm_skill = llm_skill
         self.vector_skill = vector_skill
+        self.usage_count = 0
         logger.info("KnowledgeQualityEvaluator initialized")
+
+    def _record_usage(self):
+        """Record usage."""
+        self.usage_count += 1
 
     def evaluate_rag(
         self,
