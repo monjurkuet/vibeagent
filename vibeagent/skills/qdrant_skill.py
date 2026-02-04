@@ -125,6 +125,13 @@ class QdrantSkill(BaseSkill):
         except Exception:
             return False
 
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        deps = ["qdrant-client"]
+        if not self.use_ollama_embeddings:
+            deps.append("sentence-transformers")
+        return deps
+
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""
         return {
