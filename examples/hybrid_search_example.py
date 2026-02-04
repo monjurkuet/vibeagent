@@ -45,7 +45,7 @@ def main():
 
     # Keyword search (Elasticsearch)
     elasticsearch_skill = ElasticsearchSkill(
-        url=elasticsearch_url,
+        hosts=elasticsearch_url,
         index_name="knowledge_base",
     )
     print("   Elasticsearch (Keyword Search) initialized")
@@ -53,7 +53,7 @@ def main():
     # Knowledge graph (Neo4j)
     neo4j_skill = Neo4jSkill(
         uri=neo4j_uri,
-        user=neo4j_user,
+        username=neo4j_user,
         password=neo4j_password,
     )
     print("   Neo4j (Graph Search) initialized")

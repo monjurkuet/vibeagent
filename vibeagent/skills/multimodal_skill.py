@@ -52,7 +52,6 @@ class MultiModalSkill(BaseSkill):
         super().__init__(
             name="multimodal",
             version="1.0.0",
-            description="Process multi-modal content (images, videos, code)",
         )
         self.embedding_model = embedding_model
         self.max_image_size = max_image_size
@@ -94,6 +93,13 @@ class MultiModalSkill(BaseSkill):
     def validate(self) -> bool:
         """Validate skill configuration."""
         return True
+
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        deps = ["pillow", "python-magic", "requests"]
+        if self.embedding_model:
+            deps.append("sentence-transformers")
+        return deps
 
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""

@@ -58,7 +58,6 @@ class EntityExtractionSkill(BaseSkill):
         super().__init__(
             name="entity_extraction",
             version="1.0.0",
-            description="Extract entities and relationships for knowledge graphs",
         )
         self.llm_skill = llm_skill
         self.model = model
@@ -67,6 +66,10 @@ class EntityExtractionSkill(BaseSkill):
     def validate(self) -> bool:
         """Validate skill configuration."""
         return True
+
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        return []
 
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""

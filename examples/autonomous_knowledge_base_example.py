@@ -58,11 +58,10 @@ def main():
     print("\n1. Initializing LLM skill...")
     llm_skill = LLMSkill(
         base_url=openai_api_url,
-        api_key=openai_api_key,
-        model="gpt-4",
-        timeout=60,
+        enable_round_robin=True,
+        max_retries=3,
     )
-    print("   LLM skill initialized")
+    print("   LLM skill initialized with round-robin model selection")
 
     # Initialize skills
     print("\n2. Initializing autonomous knowledge base skills...")
@@ -79,7 +78,7 @@ def main():
 
     # Keyword search (Elasticsearch)
     elasticsearch_skill = ElasticsearchSkill(
-        url=elasticsearch_url,
+        hosts=elasticsearch_url,
         index_name="knowledge_base",
     )
     print("   - Elasticsearch (Keyword Search) initialized")
@@ -87,7 +86,7 @@ def main():
     # Knowledge graph (Neo4j)
     neo4j_skill = Neo4jSkill(
         uri=neo4j_uri,
-        user=neo4j_user,
+        username=neo4j_user,
         password=neo4j_password,
     )
     print("   - Neo4j (Knowledge Graph) initialized")
@@ -110,8 +109,8 @@ def main():
 
     # Multi-modal processing
     multimodal_skill = MultiModalSkill(
-        embedding_url=embedding_url,
         embedding_model=embedding_model,
+        vision_api_url=openai_api_url,
     )
     print("   - MultiModal processing initialized")
 
@@ -154,8 +153,7 @@ def main():
     learning_loop = ContinuousLearningLoop(
         evaluator=quality_evaluator,
         vector_skill=qdrant_skill,
-        keyword_skill=elasticsearch_skill,
-        graph_skill=neo4j_skill,
+        neo4j_skill=neo4j_skill,
     )
     print("   Learning loop initialized")
 

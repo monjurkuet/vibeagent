@@ -58,7 +58,6 @@ class Neo4jSkill(BaseSkill):
         super().__init__(
             name="neo4j",
             version="1.0.0",
-            description="Knowledge graph operations with Neo4j",
         )
         self.uri = uri
         self.username = username
@@ -113,6 +112,10 @@ class Neo4jSkill(BaseSkill):
             return True
         except Exception:
             return False
+
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        return ["neo4j"]
 
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""

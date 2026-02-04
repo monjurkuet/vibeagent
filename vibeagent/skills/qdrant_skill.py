@@ -54,7 +54,6 @@ class QdrantSkill(BaseSkill):
         super().__init__(
             name="qdrant",
             version="1.0.0",
-            description="Vector database operations with Qdrant",
         )
         self.url = url
         self.api_key = api_key

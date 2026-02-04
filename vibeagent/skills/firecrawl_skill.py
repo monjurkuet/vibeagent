@@ -47,7 +47,6 @@ class FirecrawlSkill(BaseSkill):
         super().__init__(
             name="firecrawl",
             version="1.0.0",
-            description="AI-powered web scraping with Firecrawl",
         )
         self.api_key = api_key
         self.api_url = api_url
@@ -77,6 +76,10 @@ class FirecrawlSkill(BaseSkill):
                 logger.warning("Firecrawl API key not provided")
                 return False
         return True
+
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        return ["firecrawl-py"]
 
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""

@@ -36,7 +36,6 @@ class ElasticsearchSkill(BaseSkill):
         super().__init__(
             name="elasticsearch",
             version="1.0.0",
-            description="Keyword-based search with Elasticsearch",
         )
         self.hosts = hosts
         self.index_name = index_name
@@ -112,6 +111,10 @@ class ElasticsearchSkill(BaseSkill):
             return client.ping()
         except Exception:
             return False
+
+    def get_dependencies(self) -> list[str]:
+        """Return list of dependencies."""
+        return ["elasticsearch"]
 
     def get_tool_schema(self) -> dict[str, Any]:
         """Get OpenAI function schema for this skill."""
